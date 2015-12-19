@@ -18,17 +18,19 @@ public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
 		
 		int rectangleWidth = 60;
-		int rectangleHeight = 75;
+		int rectangleHeight = 50;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 		
 		//read points from text file
-		LinkedList<Point> points = Point.readPoints("points_ext.csv");
+		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
+		//create random points
+		LinkedList<Point> points = Point.randomPoints(10,500,500);
 		
 		//create label candidates for the points
 		ArrayList<Rectangle> rectangles = Rectangle.fourPositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "all_rectangles_ext_60x75.svg", true);
+		writeToSVG(rectangles, points, "rectangles_random_500x500_w60xh50.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
@@ -38,7 +40,7 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "selection_ext_60x75.svg", false);
+			writeToSVG(rectangles, points, "selection_random_500x500_w60xh50.svg", false);
 		}
 
 	}

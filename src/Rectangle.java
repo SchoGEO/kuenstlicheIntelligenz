@@ -72,7 +72,7 @@ public class Rectangle {
 		return "" + c1 + "," + r1 + "," + c2 + "," + r2;
 	}
 
-	public static ArrayList<Rectangle> fourPositionModel(LinkedList<Point> points,	int w, int h) {
+	public static ArrayList<Rectangle> fourPositionModel(LinkedList<Point> points, int w, int h) {
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
 		for (Point p : points) {
 			
@@ -99,6 +99,27 @@ public class Rectangle {
 			rectangles.add(r2); 
 			rectangles.add(r3); 
 			rectangles.add(r4); 
+		}
+		return rectangles;
+	}
+
+	public static ArrayList<Rectangle> twoPositionModel(LinkedList<Point> points, int w, int h) {
+		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(2 * points.size());
+		for (Point p : points) {
+
+			//upper left
+			Rectangle r3 = new Rectangle(p.getColumn() - w, p.getRow() - h, p.getColumn(), p.getRow());
+
+			//upper right
+			Rectangle r4 = new Rectangle(p.getColumn(), p.getRow() - h, p.getColumn() + w, p.getRow());
+
+			//add rectangles to set of possible labels for p
+			p.addRectangle(r3);
+			p.addRectangle(r4);
+
+			//add rectangles to set of all labels
+			rectangles.add(r3);
+			rectangles.add(r4);
 		}
 		return rectangles;
 	}
