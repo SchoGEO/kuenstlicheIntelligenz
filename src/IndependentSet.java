@@ -24,13 +24,13 @@ public class IndependentSet {
 		//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
-		LinkedList<Point> points = Point.randomPoints(10,500,500);
+		LinkedList<Point> points = Point.randomPoints(20,500,500);
 		
 		//create label candidates for the points
-		ArrayList<Rectangle> rectangles = Rectangle.fourPositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
+		ArrayList<Rectangle> rectangles = Rectangle.twoPositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "rectangles_random_500x500_w60xh50.svg", true);
+		writeToSVG(rectangles, points, "2PM_distribution_random20_500x500_w60xh50.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
@@ -40,14 +40,14 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "selection_random_500x500_w60xh50.svg", false);
+			writeToSVG(rectangles, points, "2PM_selection_random20_500x500_w60xh50.svg", false);
 		}
 
 	}
 	
 	public static boolean solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points) throws ContradictionException, TimeoutException {
 		/*
-		 * TODO: 
+		 * TODO: --> Erledigt
 		 * Set up SAT formula to model the following problem:
 		 * - For each point, one of its four rectangles has to be selected
 		 * - For each two intersecting rectangles, at most one rectangle can be selected
@@ -58,25 +58,57 @@ public class IndependentSet {
 		 * - use the method setSelected to indicate whether a rectangle is selected
 		 * - return true  
 		 */
+		/*
+		 * TODO:
+		 * - solve Methode anpassen, sodass auch twoPositionModel funktioniert --> erledigt
+		 * - solve Methode anpassen, sodass auch threePositionModel funktioniert
+		 * 		- Rectangle Klasse muss angepasst werden mit Methode threePositionModel
+		 * 		- komplizierter, weil jeder Punkt vier Rechtecke bekommt (a,b,c,d), aus denen sich drei Labelrechtecke
+		 *		zusammensetzten lassen
+		 * - Methode schreiben, mit der sich die Laufzeit automatisch testen lässt mit größer werdenden Instanzen
+		 */
 
 		//initialize solver
 		ISolver solver = SolverFactory.newDefault();
-		solver.newVar(points.size()*4); //number of possible labels = point-count*4
+
+		//get to know if two-, three- or four- PositionModel is used
+		double model = rectangles.size() / points.size();
+		//check if model has value 2 or 3 or 4
+		if (model == 2.0 ^ model == 3.0 ^ model == 4.0){
+			System.out.println("A "+ (int) model + "-PositionModel is used!");
+		}
+		//if not throw RuntimeException
+		else{
+			throw new RuntimeException("A Two-, Three- or Four-PositionModel has to be used!");
+		}
+		solver.newVar(points.size()*(int)model); //number of possible labels
 		solver.setTimeout (3600); // 1 hour timeout
 
 		//for every point
 		for (Point p : points){
-			//get 4 rectangles of this point
+			//get rectangles of this point
 			LinkedList<Rectangle> point_rect = p.getRectangles();
-			//get the IDs of the 4 rectangles
+			//get the IDs of the rectangles
 			int p1 = point_rect.get(0).getID();
 			int p2 = point_rect.get(1).getID();
-			int p3 = point_rect.get(2).getID();
-			int p4 = point_rect.get(3).getID();
-			//build newClause with IDs of 4 rectangles
-			int[] newClause = {p1, p2, p3, p4};
-			//add newClause to the solver
-			solver.addClause(new VecInt(newClause));
+			int p3;
+			int p4;
+
+			//build clauses depending the model used
+			switch ((int)model){
+				case 2:		int[] twoClause = {p1,p2};
+							solver.addClause(new VecInt(twoClause));
+							break;
+				case 3:		p3 = point_rect.get(2).getID();
+							int[] threeClause = {p1,p2,p3};
+							solver.addClause(new VecInt(threeClause));
+							break;
+				case 4:		p3 = point_rect.get(2).getID();
+							p4 = point_rect.get(3).getID();
+							int[] fourClause = {p1,p2,p3,p4};
+							solver.addClause(new VecInt(fourClause));
+							break;
+			}
 		}
 
 		//for every available rectangle
