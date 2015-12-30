@@ -18,34 +18,44 @@ public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
 		
 		int rectangleWidth = 60;
-		int rectangleHeight = 50;
+		int rectangleHeight = 20;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 		
 		//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
-		LinkedList<Point> points = Point.randomPoints(20,500,500);
+		LinkedList<Point> points = Point.randomPoints(30,600,600);
 		
 		//create label candidates for the points
-		ArrayList<Rectangle> rectangles = Rectangle.twoPositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
+		ArrayList<Rectangle> rectangles = Rectangle.threePositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "2PM_distribution_random20_500x500_w60xh50.svg", true);
+		writeToSVG(rectangles, points, "3PM_distribution_random30_600x600_w60xh20.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
-		boolean satisfiable = solve(rectangles, points);
+		boolean satisfiable = solve(rectangles, points, 3);
 		long afterTime = System.currentTimeMillis();
 
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "2PM_selection_random20_500x500_w60xh50.svg", false);
+			writeToSVG(rectangles, points, "3PM_selection_random30_600x600_w60xh20.svg", false);
 		}
 
 	}
-	
-	public static boolean solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points) throws ContradictionException, TimeoutException {
+
+	/**
+	 * solve-Methode, welche die sat4j-Bibliothek zur Lösung des Labelproblems verwendet
+	 * @param rectangles Rechtecke, welche mögliche Labelpositionen darstellen
+	 * @param points Punkte, welche von den Rechtecken umgeben sind
+	 * @param model Angabe des Modells, welches vorliegt (2-Position, 3-Position, 4-Position Modell)
+	 * @return true wenn lösbar, sonst false
+	 * @throws ContradictionException
+	 * @throws TimeoutException
+	 */
+
+	public static boolean solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
 		/*
 		 * TODO: --> Erledigt
 		 * Set up SAT formula to model the following problem:
@@ -61,27 +71,24 @@ public class IndependentSet {
 		/*
 		 * TODO:
 		 * - solve Methode anpassen, sodass auch twoPositionModel funktioniert --> erledigt
-		 * - solve Methode anpassen, sodass auch threePositionModel funktioniert
-		 * 		- Rectangle Klasse muss angepasst werden mit Methode threePositionModel
+		 * - solve Methode anpassen, sodass auch threePositionModel funktioniert --> erledigt
+		 * 		- Rectangle Klasse muss angepasst werden mit Methode threePositionModel --> erledigt
 		 * 		- komplizierter, weil jeder Punkt vier Rechtecke bekommt (a,b,c,d), aus denen sich drei Labelrechtecke
-		 *		zusammensetzten lassen
+		 *		zusammensetzten lassen --> erledigt
 		 * - Methode schreiben, mit der sich die Laufzeit automatisch testen lässt mit größer werdenden Instanzen
 		 */
 
 		//initialize solver
 		ISolver solver = SolverFactory.newDefault();
 
-		//get to know if two-, three- or four- PositionModel is used
-		double model = rectangles.size() / points.size();
-		//check if model has value 2 or 3 or 4
-		if (model == 2.0 ^ model == 3.0 ^ model == 4.0){
-			System.out.println("A "+ (int) model + "-PositionModel is used!");
+		if (model == 2 ^ model == 3 ^ model == 4){
+			System.out.println("A "+ model + "-PositionModel is used!");
 		}
 		//if not throw RuntimeException
 		else{
 			throw new RuntimeException("A Two-, Three- or Four-PositionModel has to be used!");
 		}
-		solver.newVar(points.size()*(int)model); //number of possible labels
+		solver.newVar(rectangles.size()); //number of available rectangles
 		solver.setTimeout (3600); // 1 hour timeout
 
 		//for every point
@@ -95,13 +102,22 @@ public class IndependentSet {
 			int p4;
 
 			//build clauses depending the model used
-			switch ((int)model){
+			switch (model){
 				case 2:		int[] twoClause = {p1,p2};
 							solver.addClause(new VecInt(twoClause));
 							break;
 				case 3:		p3 = point_rect.get(2).getID();
-							int[] threeClause = {p1,p2,p3};
-							solver.addClause(new VecInt(threeClause));
+							p4 = point_rect.get(3).getID();
+							int[] aOrC = {p1,p3};
+							int[] dOrB = {p4,p2};
+							int[] bOrC = {p2,p3};
+							int[] notAOrB = {-p1,p2};
+							int[] notDOrC = {-p4,p3};
+							solver.addClause(new VecInt(aOrC));
+							solver.addClause(new VecInt(dOrB));
+							solver.addClause(new VecInt(bOrC));
+							solver.addClause(new VecInt(notAOrB));
+							solver.addClause(new VecInt(notDOrC));
 							break;
 				case 4:		p3 = point_rect.get(2).getID();
 							p4 = point_rect.get(3).getID();
@@ -111,6 +127,31 @@ public class IndependentSet {
 			}
 		}
 
+		//Rechtecke pro Punkt
+		int rectPerPoint = model;
+		if (model == 3) rectPerPoint = 4;
+		//für jedes Rechteck (außer die des letzten Punktes)
+		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
+			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
+			Rectangle r1 = rectangles.get(i-1);
+			//ID des nächsten Rechtecks zum Vergleichen bestimmen
+			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
+			if (i % rectPerPoint != 0) nextPos += 4;
+			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
+			for (int j = nextPos ; j < rectangles.size() ; j++){
+				Rectangle r2 = rectangles.get(j-1);
+				//prüfen ob sich die Rechtecke überschneiden
+				if (r1.intersects(r2)) {
+					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
+					int[] intersectClause = {-i, -j};
+					//Klausel dem Solver übergeben
+					solver.addClause(new VecInt(intersectClause));
+				}
+			}
+		}
+
+		/**
+		 * --- ALTE METHODE ZUM VERGLEICH DER RECHTECK-ÜBERSCHNEIDUNGEN ---
 		//for every available rectangle
 		for (Rectangle r1 : rectangles) {
 			//and every other available rectangle
@@ -131,6 +172,7 @@ public class IndependentSet {
 				}
 			}
 		}
+		 */
 
 		IProblem problem = solver;
 

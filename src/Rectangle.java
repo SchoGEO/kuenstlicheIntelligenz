@@ -103,6 +103,37 @@ public class Rectangle {
 		return rectangles;
 	}
 
+	public static ArrayList<Rectangle> threePositionModel(LinkedList<Point> points, int w, int h) {
+		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
+		for (Point p : points) {
+
+			//upper left left
+			Rectangle r1 = new Rectangle(p.getColumn() - w, p.getRow() - h, p.getColumn() - (w/2), p.getRow());
+
+			//upper left right
+			Rectangle r2 = new Rectangle(p.getColumn() - (w/2), p.getRow() - h, p.getColumn(), p.getRow());
+
+			//upper right left
+			Rectangle r3 = new Rectangle(p.getColumn(), p.getRow() - h, p.getColumn() + (w/2), p.getRow());
+
+			//upper right right
+			Rectangle r4 = new Rectangle(p.getColumn() + (w/2), p.getRow() - h, p.getColumn() + w, p.getRow());
+
+			//add rectangles to set of possible labels for p
+			p.addRectangle(r1);
+			p.addRectangle(r2);
+			p.addRectangle(r3);
+			p.addRectangle(r4);
+
+			//add rectangles to set of all labels
+			rectangles.add(r1);
+			rectangles.add(r2);
+			rectangles.add(r3);
+			rectangles.add(r4);
+		}
+		return rectangles;
+	}
+
 	public static ArrayList<Rectangle> twoPositionModel(LinkedList<Point> points, int w, int h) {
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(2 * points.size());
 		for (Point p : points) {
