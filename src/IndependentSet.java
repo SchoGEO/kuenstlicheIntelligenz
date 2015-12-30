@@ -76,6 +76,7 @@ public class IndependentSet {
 		 * 		- komplizierter, weil jeder Punkt vier Rechtecke bekommt (a,b,c,d), aus denen sich drei Labelrechtecke
 		 *		zusammensetzten lassen --> erledigt
 		 * - Methode schreiben, mit der sich die Laufzeit automatisch testen lässt mit größer werdenden Instanzen
+		 * - 2-Sat-Solver umsetzen für 2-Position- und 3-Position-Modell
 		 */
 
 		//initialize solver

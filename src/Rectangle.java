@@ -103,6 +103,13 @@ public class Rectangle {
 		return rectangles;
 	}
 
+	/**
+	 * threePositionModel: drei mögliche Positionen durch vier nebeneinanderliegende Rechtecke
+	 * @param points
+	 * @param w
+	 * @param h
+	 * @return
+	 */
 	public static ArrayList<Rectangle> threePositionModel(LinkedList<Point> points, int w, int h) {
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
 		for (Point p : points) {
