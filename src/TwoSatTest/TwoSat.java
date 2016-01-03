@@ -1,6 +1,6 @@
 package TwoSatTest;
 /******************************************************************************
- * File: TwoSat.java
+ * File: TwoSatTest.java
  * Author: Keith Schwarz (htiek@cs.stanford.edu)
  *
  * An implementation of a 2-SAT solver, which takes as input a boolean formula

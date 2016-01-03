@@ -3,8 +3,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
@@ -13,6 +13,9 @@ import org.sat4j.specs.IProblem;
 import org.sat4j.specs.ISolver;
 import org.sat4j.specs.TimeoutException;
 
+import TwoSatTest.Clause;
+import TwoSatTest.Literal;
+
 
 public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
@@ -20,7 +23,7 @@ public class IndependentSet {
 		int rectangleWidth = 60;
 		int rectangleHeight = 20;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
-		
+
 		//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
@@ -54,7 +57,6 @@ public class IndependentSet {
 	 * @throws ContradictionException
 	 * @throws TimeoutException
 	 */
-
 	public static boolean solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
 		/*
 		 * TODO: --> Erledigt
@@ -83,7 +85,7 @@ public class IndependentSet {
 		ISolver solver = SolverFactory.newDefault();
 
 		if (model == 2 ^ model == 3 ^ model == 4){
-			System.out.println("A "+ model + "-PositionModel is used!");
+			System.out.println("A " + model + "-PositionModel is used!");
 		}
 		//if not throw RuntimeException
 		else{
@@ -137,7 +139,7 @@ public class IndependentSet {
 			Rectangle r1 = rectangles.get(i-1);
 			//ID des nächsten Rechtecks zum Vergleichen bestimmen
 			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
-			if (i % rectPerPoint != 0) nextPos += 4;
+			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
 			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
 			for (int j = nextPos ; j < rectangles.size() ; j++){
 				Rectangle r2 = rectangles.get(j-1);
@@ -203,8 +205,76 @@ public class IndependentSet {
 		}
 
 	}
-	
-	
+
+	/**
+	 * solve-Methode, welche den TwoSatTest-Solver von Keith Schwarz zur Lösung des Labelproblems verwendet
+	 * @param rectangles Rechtecke, welche mögliche Labelpositionen darstellen
+	 * @param points Punkte, welche von den Rechtecken umgeben sind
+	 * @param model Angabe des Modells, welches vorliegt (2-Position, 3-Position)
+	 * @return true wenn lösbar, sonst false
+	 */
+	public static boolean twoSATSolve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) {
+
+		//Liste, welche alle zu berücksichtigenden Klauseln bekommt
+		List<Clause<Integer>> formula = new LinkedList<Clause<Integer>>();
+
+		//for every point
+		for (Point p : points){
+			//get rectangles of this point
+			LinkedList<Rectangle> point_rect = p.getRectangles();
+			//get the IDs of the rectangles
+			int r1 = point_rect.get(0).getID();
+			int r2 = point_rect.get(1).getID();
+			int r3;
+			int r4;
+
+			Literal<Integer> r1_lit = new Literal<Integer>(r1, true);
+			Literal<Integer> r2_lit = new Literal<Integer>(r2, true);
+
+			//build clauses depending the model used
+			switch (model){
+				case 2:		formula.add(new Clause<Integer>(r1_lit, r2_lit));
+							break;
+				case 3:		r3 = point_rect.get(2).getID();
+							r4 = point_rect.get(3).getID();
+							Literal<Integer> r3_lit = new Literal<Integer>(r3, true);
+							Literal<Integer> r4_lit = new Literal<Integer>(r4, true);
+							formula.add(new Clause<>(r1_lit, r3_lit));
+							formula.add(new Clause<>(r4_lit, r2_lit));
+							formula.add(new Clause<>(r2_lit, r3_lit));
+							formula.add(new Clause<>(r1_lit.negation(), r2_lit));
+							formula.add(new Clause<>(r4_lit.negation(), r3_lit));
+							break;
+			}
+		}
+
+		//Rechtecke pro Punkt
+		int rectPerPoint = model;
+		if (model == 3) rectPerPoint = 4;
+		//für jedes Rechteck (außer die des letzten Punktes)
+		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
+			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
+			Rectangle r1 = rectangles.get(i-1);
+			//ID des nächsten Rechtecks zum Vergleichen bestimmen
+			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
+			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
+			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
+			for (int j = nextPos ; j < rectangles.size() ; j++){
+				Rectangle r2 = rectangles.get(j-1);
+				//prüfen ob sich die Rechtecke überschneiden
+				if (r1.intersects(r2)) {
+					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
+					int[] intersectClause = {-i, -j};
+					//Klausel dem Solver übergeben
+					solver.addClause(new VecInt(intersectClause));
+				}
+			}
+		}
+
+		return true;
+	}
+
+
 	public static void writeToSVG( ArrayList<Rectangle> rectangles, LinkedList<Point> points, String filename, boolean all) throws FileNotFoundException, UnsupportedEncodingException {
 		
 		//bounding box
