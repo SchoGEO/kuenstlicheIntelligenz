@@ -5,7 +5,10 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import TwoSatTest.TwoSat;
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
 import org.sat4j.specs.ContradictionException;
@@ -15,6 +18,8 @@ import org.sat4j.specs.TimeoutException;
 
 import TwoSatTest.Clause;
 import TwoSatTest.Literal;
+
+import javax.swing.*;
 
 
 public class IndependentSet {
@@ -27,23 +32,38 @@ public class IndependentSet {
 		//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
-		LinkedList<Point> points = Point.randomPoints(30,600,600);
+		LinkedList<Point> points = Point.randomPoints(25,600,600);
 		
 		//create label candidates for the points
 		ArrayList<Rectangle> rectangles = Rectangle.threePositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "3PM_distribution_random30_600x600_w60xh20.svg", true);
+		writeToSVG(rectangles, points, "3PM_distribution_random25_600x600_w60xh20.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
+		//boolean satisfiable = solve(rectangles, points, 3);
 		boolean satisfiable = solve(rectangles, points, 3);
 		long afterTime = System.currentTimeMillis();
 
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "3PM_selection_random30_600x600_w60xh20.svg", false);
+			writeToSVG(rectangles, points, "3PM_selection_random25_600x600_w60xh20_1.svg", false);
+		}
+
+		Rectangle.resetList(rectangles);
+
+		//solve SAT instance and write solution to file, if it exists
+		currentTime = System.currentTimeMillis();
+		//boolean satisfiable = solve(rectangles, points, 3);
+		satisfiable = twoSATSolve(rectangles, points, 3);
+		afterTime = System.currentTimeMillis();
+
+		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
+
+		if (satisfiable) {
+			writeToSVG(rectangles, points, "3PM_selection_random25_600x600_w60xh20_2.svg", false);
 		}
 
 	}
@@ -263,15 +283,52 @@ public class IndependentSet {
 				Rectangle r2 = rectangles.get(j-1);
 				//prüfen ob sich die Rechtecke überschneiden
 				if (r1.intersects(r2)) {
-					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
-					int[] intersectClause = {-i, -j};
-					//Klausel dem Solver übergeben
-					solver.addClause(new VecInt(intersectClause));
+					//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
+					Literal<Integer> i_lit = new Literal<>(i, true);
+					Literal<Integer> j_lit = new Literal<>(j, true);
+
+					//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
+					formula.add(new Clause<>(i_lit.negation(), j_lit.negation()));
 				}
 			}
 		}
 
-		return true;
+		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
+
+		if (truthAssignment != null) {
+			System.out.println("The problem is satisfiable.");
+			System.out.println("Truth-Assignment:");
+			for (Entry<Literal<Integer>, Boolean> entry : truthAssignment.entrySet()) {
+				//Rectangle-Index besorgen (1 kleiner als die ID)
+				int rect_id = entry.getKey().value() - 1;
+				//Schauen ob das Literal (positive / negative) ist -> z.B. 17 oder ~17
+				boolean positive = entry.getKey().isPositive();
+				//Wenn postitive den boolean-Wert aus truthAssignment übernehmen
+				if (positive) {
+					rectangles.get(rect_id).setSelected(entry.getValue());
+				}
+				//Wenn nicht positive und truthAssignment-Wert false ist, rectangle auf selected (true) setzen
+				//weil "~17: false" gleichbedeutend mit "17: true" ist!
+				else {
+					rectangles.get(rect_id).setSelected(!entry.getValue());
+				}
+
+				/*if (!positive && !entry.getValue()) {
+					rectangles.get(rect_id).setSelected(true);
+				}
+				if (!positive && entry.getValue()) {
+					rectangles.get(rect_id).setSelected(false);
+				}*/
+
+				System.out.println(entry.getKey() + " " + entry.getValue());
+			}
+			return true;
+		}
+		else {
+			System.out.println("The problem is unsatisfiable!");
+			return false;
+		}
+
 	}
 
 

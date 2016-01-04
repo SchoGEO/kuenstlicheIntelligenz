@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class Rectangle {
@@ -168,6 +169,16 @@ public class Rectangle {
 
 	public void setSelected(boolean isSelected) {
 		this.isSelected = isSelected;
+	}
+
+	/**
+	 * Methode resetList setzt die selected-Variable jedes Rechtecks in der Liste auf false
+	 * @param rectangles Eine Liste mit Rechtecken
+	 */
+	public static void resetList(List<Rectangle> rectangles) {
+		for (Rectangle rectangle: rectangles) {
+			rectangle.setSelected(false);
+		}
 	}
 	
 	
