@@ -32,13 +32,13 @@ public class IndependentSet {
 		//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
-		LinkedList<Point> points = Point.randomPoints(25,600,600);
+		LinkedList<Point> points = Point.randomPoints(100,1200,1200);
 		
 		//create label candidates for the points
 		ArrayList<Rectangle> rectangles = Rectangle.threePositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "3PM_distribution_random25_600x600_w60xh20.svg", true);
+		writeToSVG(rectangles, points, "3PM_distribution_random100_1200x1200_w60xh20.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
@@ -49,7 +49,7 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "3PM_selection_random25_600x600_w60xh20_1.svg", false);
+			writeToSVG(rectangles, points, "3PM_selection_random100_1200x1200_w60xh20_1.svg", false);
 		}
 
 		Rectangle.resetList(rectangles);
@@ -63,7 +63,7 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "3PM_selection_random25_600x600_w60xh20_2.svg", false);
+			writeToSVG(rectangles, points, "3PM_selection_random100_1200x1200_w60xh20_2.svg", false);
 		}
 
 	}
@@ -262,6 +262,8 @@ public class IndependentSet {
 							formula.add(new Clause<>(r1_lit, r3_lit));
 							formula.add(new Clause<>(r4_lit, r2_lit));
 							formula.add(new Clause<>(r2_lit, r3_lit));
+							formula.add(new Clause<>(r1_lit.negation(), r3_lit.negation()));
+							formula.add(new Clause<>(r4_lit.negation(), r2_lit.negation()));
 							formula.add(new Clause<>(r1_lit.negation(), r2_lit));
 							formula.add(new Clause<>(r4_lit.negation(), r3_lit));
 							break;
