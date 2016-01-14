@@ -112,6 +112,7 @@ public class Rectangle {
 	 * @return
 	 */
 	public static ArrayList<Rectangle> threePositionModel(LinkedList<Point> points, int w, int h) {
+		maxVar = 0;
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
 		for (Point p : points) {
 

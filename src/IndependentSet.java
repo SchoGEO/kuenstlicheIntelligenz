@@ -1,7 +1,4 @@
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,16 +26,17 @@ public class IndependentSet {
 		int rectangleHeight = 20;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
-		//read points from text file
+		compareRuntimes(10,50,100,500,3,rectangleWidth,rectangleHeight);
+		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
-		LinkedList<Point> points = Point.randomPoints(100,1200,1200);
+		LinkedList<Point> points = Point.randomPoints(80,1200,1200);
 		
 		//create label candidates for the points
 		ArrayList<Rectangle> rectangles = Rectangle.threePositionModel(points, (int) (rectangleWidth * scale), (int) (rectangleHeight * scale));
 			
 		//write all points and rectangles to file
-		writeToSVG(rectangles, points, "3PM_distribution_random100_1200x1200_w60xh20.svg", true);
+		writeToSVG(rectangles, points, "3PM_distribution_random80_1200x1200_w60xh20.svg", true);
 		
 		//solve SAT instance and write solution to file, if it exists
 		long currentTime = System.currentTimeMillis();
@@ -49,7 +47,7 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "3PM_selection_random100_1200x1200_w60xh20_1.svg", false);
+			writeToSVG(rectangles, points, "3PM_selection_random80_1200x1200_w60xh20_1.svg", false);
 		}
 
 		Rectangle.resetList(rectangles);
@@ -63,8 +61,8 @@ public class IndependentSet {
 		System.out.println("Zeit in Millisekunden: " +(afterTime-currentTime));
 
 		if (satisfiable) {
-			writeToSVG(rectangles, points, "3PM_selection_random100_1200x1200_w60xh20_2.svg", false);
-		}
+			writeToSVG(rectangles, points, "3PM_selection_random80_1200x1200_w60xh20_2.svg", false);
+		}*/
 
 	}
 
@@ -112,7 +110,7 @@ public class IndependentSet {
 			throw new RuntimeException("A Two-, Three- or Four-PositionModel has to be used!");
 		}
 		solver.newVar(rectangles.size()); //number of available rectangles
-		solver.setTimeout (3600); // 1 hour timeout
+		//solver.setTimeout (3600); // 1 hour timeout
 
 		//for every point
 		for (Point p : points){
@@ -294,12 +292,14 @@ public class IndependentSet {
 				}
 			}
 		}
-
+		long currentTime = System.currentTimeMillis();
 		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
+		long afterTime = System.currentTimeMillis();
+		System.out.println("twoSatSolve needs: " + (afterTime-currentTime) + " milliseconds!");
 
 		if (truthAssignment != null) {
 			System.out.println("The problem is satisfiable.");
-			System.out.println("Truth-Assignment:");
+			//System.out.println("Truth-Assignment:");
 			for (Entry<Literal<Integer>, Boolean> entry : truthAssignment.entrySet()) {
 				//Rectangle-Index besorgen (1 kleiner als die ID)
 				int rect_id = entry.getKey().value() - 1;
@@ -322,7 +322,7 @@ public class IndependentSet {
 					rectangles.get(rect_id).setSelected(false);
 				}*/
 
-				System.out.println(entry.getKey() + " " + entry.getValue());
+				//System.out.println(entry.getKey() + " " + entry.getValue());
 			}
 			return true;
 		}
@@ -333,6 +333,82 @@ public class IndependentSet {
 
 	}
 
+
+	/**
+	 *
+	 * @param maxPoints --> maximale Größe der Instanz, für die die Laufzeiten verglichen werden sollen
+	 */
+	public static void compareRuntimes(int minPoints, int maxPoints, int minFrameEdge, int maxFrameEdge, int model, int rectWidth, int rectHeight){
+		String filename = System.currentTimeMillis() + ".txt";
+		File newFile = new File(filename);
+		int id = 0;
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(newFile)))
+		{
+			//Kopfzeile schreiben
+			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
+
+			for(int i = minPoints ; i <= maxPoints ; i = i+10){
+				for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 50){
+					++id;
+					LinkedList<Point> points = Point.randomPoints(i,y,y);
+					ArrayList<Rectangle> rectangles = new ArrayList<>(i*4);
+
+					switch(model){
+						case 2:
+							rectangles = Rectangle.twoPositionModel(points, rectWidth, rectHeight);
+							break;
+						case 3:
+							rectangles = Rectangle.threePositionModel(points, rectWidth, rectHeight);
+							break;
+						case 4:
+							rectangles = Rectangle.fourPositionModel(points, rectWidth, rectHeight);
+							break;
+					}
+					String distributionPath = model+"PM_"+i+"_"+y+".svg";
+					//write all points and rectangles to file
+					writeToSVG(rectangles, points, distributionPath, true);
+
+					//solve SAT instance and write solution to file, if it exists
+					long currentTime = System.currentTimeMillis();
+					boolean satisfiable = false;
+					try{
+						satisfiable = solve(rectangles, points, 3);
+					}catch(Exception e){
+						System.out.println(e);
+					}
+					long afterTime = System.currentTimeMillis();
+					String sat4jPath = model+"PM_"+i+"_"+y+"sat4j.svg";
+					writeToSVG(rectangles, points, sat4jPath, false);
+
+					writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + (afterTime-currentTime) + "\n");
+
+					Rectangle.resetList(rectangles);
+
+					//solve SAT instance and write solution to file, if it exists
+					currentTime = System.currentTimeMillis();
+					//boolean satisfiable = solve(rectangles, points, 3);
+					satisfiable = twoSATSolve(rectangles, points, 3);
+					afterTime = System.currentTimeMillis();
+
+					String twoSatPath = model+"PM_"+i+"_"+y+"2sat.svg";
+
+					writeToSVG(rectangles, points, twoSatPath, false);
+
+					writer.write(id+","+ "2Sat" + "," + i + "," + y + "," + satisfiable + "," + (afterTime-currentTime) + "\n");
+				}
+			}
+		}
+		catch(IOException io)
+		{
+			System.out.println(io);
+		}
+
+		try {
+			newFile.createNewFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void writeToSVG( ArrayList<Rectangle> rectangles, LinkedList<Point> points, String filename, boolean all) throws FileNotFoundException, UnsupportedEncodingException {
 		
