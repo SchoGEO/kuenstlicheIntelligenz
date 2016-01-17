@@ -22,11 +22,11 @@ import javax.swing.*;
 public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
 		
-		int rectangleWidth = 60;
-		int rectangleHeight = 20;
+		int rectangleWidth = 30;
+		int rectangleHeight = 10;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
-		compareRuntimes(10,50,100,500,3,rectangleWidth,rectangleHeight);
+		compareRuntimes(10,6000,15000,15000,3,rectangleWidth,rectangleHeight);
 		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
@@ -339,7 +339,15 @@ public class IndependentSet {
 	 * @param maxPoints --> maximale Größe der Instanz, für die die Laufzeiten verglichen werden sollen
 	 */
 	public static void compareRuntimes(int minPoints, int maxPoints, int minFrameEdge, int maxFrameEdge, int model, int rectWidth, int rectHeight){
-		String filename = System.currentTimeMillis() + ".txt";
+		String newDirStr = "./" + String.valueOf(System.currentTimeMillis()) + "/";
+		File newDir = new File(newDirStr);
+		try{
+			newDir.mkdir();
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+		String filename = newDirStr + System.currentTimeMillis() + ".txt";
 		File newFile = new File(filename);
 		int id = 0;
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(newFile)))
@@ -347,7 +355,7 @@ public class IndependentSet {
 			//Kopfzeile schreiben
 			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
 
-			for(int i = minPoints ; i <= maxPoints ; i = i+10){
+			for(int i = minPoints ; i <= maxPoints ; i = i+100){
 				for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 50){
 					++id;
 					LinkedList<Point> points = Point.randomPoints(i,y,y);
@@ -364,7 +372,7 @@ public class IndependentSet {
 							rectangles = Rectangle.fourPositionModel(points, rectWidth, rectHeight);
 							break;
 					}
-					String distributionPath = model+"PM_"+i+"_"+y+".svg";
+					String distributionPath = newDirStr + model+"PM_"+i+"_"+y+".svg";
 					//write all points and rectangles to file
 					writeToSVG(rectangles, points, distributionPath, true);
 
@@ -377,7 +385,7 @@ public class IndependentSet {
 						System.out.println(e);
 					}
 					long afterTime = System.currentTimeMillis();
-					String sat4jPath = model+"PM_"+i+"_"+y+"sat4j.svg";
+					String sat4jPath = newDirStr + model+"PM_"+i+"_"+y+"sat4j.svg";
 					writeToSVG(rectangles, points, sat4jPath, false);
 
 					writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + (afterTime-currentTime) + "\n");
@@ -390,7 +398,7 @@ public class IndependentSet {
 					satisfiable = twoSATSolve(rectangles, points, 3);
 					afterTime = System.currentTimeMillis();
 
-					String twoSatPath = model+"PM_"+i+"_"+y+"2sat.svg";
+					String twoSatPath = newDirStr + model+"PM_"+i+"_"+y+"2sat.svg";
 
 					writeToSVG(rectangles, points, twoSatPath, false);
 
