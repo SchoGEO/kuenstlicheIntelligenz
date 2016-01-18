@@ -26,7 +26,7 @@ public class IndependentSet {
 		int rectangleHeight = 10;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
-		compareRuntimes(10,6000,15000,15000,3,rectangleWidth,rectangleHeight);
+		compareRuntimes(10000,100000,100000,100000,3,rectangleWidth,rectangleHeight);
 		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
@@ -75,7 +75,7 @@ public class IndependentSet {
 	 * @throws ContradictionException
 	 * @throws TimeoutException
 	 */
-	public static boolean solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
+	public static int[] solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
 		/*
 		 * TODO: --> Erledigt
 		 * Set up SAT formula to model the following problem:
@@ -195,10 +195,16 @@ public class IndependentSet {
 		}
 		 */
 
+		long currentTime = System.currentTimeMillis();
 		IProblem problem = solver;
+		int solvable = (problem.isSatisfiable()) ? 1 : 0;
+		long afterTime = System.currentTimeMillis();
+		System.out.println("sat4j needs: " + (afterTime-currentTime) + " milliseconds!");
+		int[] result = {solvable,(int)(afterTime-currentTime)};
 
-		//wenn Problem lösbar
-		if (problem.isSatisfiable()) {
+
+		/*//wenn Problem lösbar
+		if (solvable == 1) {
 			System.out.println("The problem is satisfiable.");
 			//Lösung übergeben
 			int[] solution = problem.model();
@@ -215,13 +221,11 @@ public class IndependentSet {
 					rectangles.get(i).setSelected(selected);
 				}
 			}
-			return true;
 
 		} else {
 			System.out.println("The problem is unsatisfiable.");
-			return false;
-		}
-
+		}*/
+		return result;
 	}
 
 	/**
@@ -231,7 +235,7 @@ public class IndependentSet {
 	 * @param model Angabe des Modells, welches vorliegt (2-Position, 3-Position)
 	 * @return true wenn lösbar, sonst false
 	 */
-	public static boolean twoSATSolve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) {
+	public static int[] twoSATSolve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) {
 
 		//Liste, welche alle zu berücksichtigenden Klauseln bekommt
 		List<Clause<Integer>> formula = new LinkedList<Clause<Integer>>();
@@ -296,8 +300,10 @@ public class IndependentSet {
 		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
 		long afterTime = System.currentTimeMillis();
 		System.out.println("twoSatSolve needs: " + (afterTime-currentTime) + " milliseconds!");
+		int solvable = (truthAssignment != null) ? 1 : 0;
+		int[] result = {solvable,(int)(afterTime-currentTime)};
 
-		if (truthAssignment != null) {
+		/*if (truthAssignment != null) {
 			System.out.println("The problem is satisfiable.");
 			//System.out.println("Truth-Assignment:");
 			for (Entry<Literal<Integer>, Boolean> entry : truthAssignment.entrySet()) {
@@ -315,22 +321,21 @@ public class IndependentSet {
 					rectangles.get(rect_id).setSelected(!entry.getValue());
 				}
 
-				/*if (!positive && !entry.getValue()) {
+				*//*if (!positive && !entry.getValue()) {
 					rectangles.get(rect_id).setSelected(true);
 				}
 				if (!positive && entry.getValue()) {
 					rectangles.get(rect_id).setSelected(false);
-				}*/
+				}*//*
 
 				//System.out.println(entry.getKey() + " " + entry.getValue());
 			}
-			return true;
+
 		}
 		else {
 			System.out.println("The problem is unsatisfiable!");
-			return false;
-		}
-
+		}*/
+		return result;
 	}
 
 
@@ -355,11 +360,12 @@ public class IndependentSet {
 			//Kopfzeile schreiben
 			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
 
-			for(int i = minPoints ; i <= maxPoints ; i = i+100){
+			for(int i = minPoints ; i <= maxPoints ; i = i+10000){
 				for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 50){
 					++id;
 					LinkedList<Point> points = Point.randomPoints(i,y,y);
 					ArrayList<Rectangle> rectangles = new ArrayList<>(i*4);
+					Rectangle.resetList(rectangles);
 
 					switch(model){
 						case 2:
@@ -374,35 +380,35 @@ public class IndependentSet {
 					}
 					String distributionPath = newDirStr + model+"PM_"+i+"_"+y+".svg";
 					//write all points and rectangles to file
-					writeToSVG(rectangles, points, distributionPath, true);
+					//writeToSVG(rectangles, points, distributionPath, true);
 
 					//solve SAT instance and write solution to file, if it exists
-					long currentTime = System.currentTimeMillis();
-					boolean satisfiable = false;
+					int[] sat4jResult = new int[2];
 					try{
-						satisfiable = solve(rectangles, points, 3);
+						sat4jResult = solve(rectangles, points, 3);
 					}catch(Exception e){
 						System.out.println(e);
 					}
-					long afterTime = System.currentTimeMillis();
-					String sat4jPath = newDirStr + model+"PM_"+i+"_"+y+"sat4j.svg";
-					writeToSVG(rectangles, points, sat4jPath, false);
+					boolean satisfiable = (sat4jResult[0]==1);
+					if (satisfiable) {
+						String sat4jPath = newDirStr + model+"PM_"+i+"_"+y+"sat4j.svg";
+						//writeToSVG(rectangles, points, sat4jPath, false);
+					}
 
-					writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + (afterTime-currentTime) + "\n");
+					writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + sat4jResult[1] + "\n");
 
 					Rectangle.resetList(rectangles);
 
 					//solve SAT instance and write solution to file, if it exists
-					currentTime = System.currentTimeMillis();
 					//boolean satisfiable = solve(rectangles, points, 3);
-					satisfiable = twoSATSolve(rectangles, points, 3);
-					afterTime = System.currentTimeMillis();
+					int[] twoSatResult = twoSATSolve(rectangles, points, 3);
+					satisfiable = (twoSatResult[0]==1);
+					if(satisfiable){
+						String twoSatPath = newDirStr + model+"PM_"+i+"_"+y+"2sat.svg";
+						//writeToSVG(rectangles, points, twoSatPath, false);
+					}
 
-					String twoSatPath = newDirStr + model+"PM_"+i+"_"+y+"2sat.svg";
-
-					writeToSVG(rectangles, points, twoSatPath, false);
-
-					writer.write(id+","+ "2Sat" + "," + i + "," + y + "," + satisfiable + "," + (afterTime-currentTime) + "\n");
+					writer.write(id+","+ "2Sat" + "," + i + "," + y + "," + satisfiable + "," + twoSatResult[1] + "\n");
 				}
 			}
 		}
