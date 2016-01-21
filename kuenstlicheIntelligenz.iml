@@ -8,5 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="org.sat4j.core" level="project" />
+    <orderEntry type="library" name="jts-1.14" level="project" />
   </component>
 </module>

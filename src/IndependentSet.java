@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import TwoSatTest.TwoSat;
+import com.vividsolutions.jts.index.strtree.STRtree;
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
 import org.sat4j.specs.ContradictionException;
@@ -26,7 +27,7 @@ public class IndependentSet {
 		int rectangleHeight = 10;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
-		compareRuntimes(10000,100000,100000,100000,3,rectangleWidth,rectangleHeight);
+		compareRuntimes(20,50,500,1000,3,rectangleWidth,rectangleHeight);
 		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
@@ -303,7 +304,7 @@ public class IndependentSet {
 		int solvable = (truthAssignment != null) ? 1 : 0;
 		int[] result = {solvable,(int)(afterTime-currentTime)};
 
-		/*if (truthAssignment != null) {
+		if (truthAssignment != null) {
 			System.out.println("The problem is satisfiable.");
 			//System.out.println("Truth-Assignment:");
 			for (Entry<Literal<Integer>, Boolean> entry : truthAssignment.entrySet()) {
@@ -321,20 +322,20 @@ public class IndependentSet {
 					rectangles.get(rect_id).setSelected(!entry.getValue());
 				}
 
-				*//*if (!positive && !entry.getValue()) {
+				if (!positive && !entry.getValue()) {
 					rectangles.get(rect_id).setSelected(true);
 				}
 				if (!positive && entry.getValue()) {
 					rectangles.get(rect_id).setSelected(false);
-				}*//*
+				}
 
-				//System.out.println(entry.getKey() + " " + entry.getValue());
+				System.out.println(entry.getKey() + " " + entry.getValue());
 			}
 
 		}
 		else {
 			System.out.println("The problem is unsatisfiable!");
-		}*/
+		}
 		return result;
 	}
 
@@ -360,7 +361,7 @@ public class IndependentSet {
 			//Kopfzeile schreiben
 			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
 
-			for(int i = minPoints ; i <= maxPoints ; i = i+10000){
+			for(int i = minPoints ; i <= maxPoints ; i = i+10){
 				for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 50){
 					++id;
 					LinkedList<Point> points = Point.randomPoints(i,y,y);
@@ -378,6 +379,13 @@ public class IndependentSet {
 							rectangles = Rectangle.fourPositionModel(points, rectWidth, rectHeight);
 							break;
 					}
+
+					STRtree rectanglesTree = new STRtree(rectangles.size());
+
+					for(Rectangle r : rectangles){
+						rectanglesTree.insert(r.getEnvelope(),r);
+					}
+
 					String distributionPath = newDirStr + model+"PM_"+i+"_"+y+".svg";
 					//write all points and rectangles to file
 					//writeToSVG(rectangles, points, distributionPath, true);

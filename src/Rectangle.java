@@ -1,4 +1,6 @@
 
+import com.vividsolutions.jts.geom.Envelope;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -180,6 +182,10 @@ public class Rectangle {
 		for (Rectangle rectangle: rectangles) {
 			rectangle.setSelected(false);
 		}
+	}
+
+	public Envelope getEnvelope(){
+		return new Envelope(this.getX1(),this.getX2(),this.getY1(),this.getY2());
 	}
 	
 	
