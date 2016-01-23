@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import TwoSatTest.TwoSat;
+import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.index.strtree.STRtree;
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
@@ -17,8 +18,6 @@ import org.sat4j.specs.TimeoutException;
 import TwoSatTest.Clause;
 import TwoSatTest.Literal;
 
-import javax.swing.*;
-
 
 public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
@@ -27,7 +26,7 @@ public class IndependentSet {
 		int rectangleHeight = 10;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
-		compareRuntimes(20,50,500,1000,3,rectangleWidth,rectangleHeight);
+		compareRuntimes(500,1500,5000,5000,3,rectangleWidth,rectangleHeight);
 		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
 		//create random points
@@ -76,7 +75,8 @@ public class IndependentSet {
 	 * @throws ContradictionException
 	 * @throws TimeoutException
 	 */
-	public static int[] solve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
+	public static int[] solve(ArrayList<Rectangle> rectangles, List<int[]> intersectionClauses,
+							  LinkedList<Point> points, int model) throws ContradictionException, TimeoutException {
 		/*
 		 * TODO: --> Erledigt
 		 * Set up SAT formula to model the following problem:
@@ -100,6 +100,7 @@ public class IndependentSet {
 		 * - 2-Sat-Solver umsetzen für 2-Position- und 3-Position-Modell
 		 */
 
+		long currentTime = System.currentTimeMillis();
 		//initialize solver
 		ISolver solver = SolverFactory.newDefault();
 
@@ -149,7 +150,10 @@ public class IndependentSet {
 			}
 		}
 
-		//Rechtecke pro Punkt
+		for(int[] intersectionClause : intersectionClauses){
+			solver.addClause(new VecInt(intersectionClause));
+		}
+		/*//Rechtecke pro Punkt
 		int rectPerPoint = model;
 		if (model == 3) rectPerPoint = 4;
 		//für jedes Rechteck (außer die des letzten Punktes)
@@ -170,7 +174,7 @@ public class IndependentSet {
 					solver.addClause(new VecInt(intersectClause));
 				}
 			}
-		}
+		}*/
 
 		/**
 		 * --- ALTE METHODE ZUM VERGLEICH DER RECHTECK-ÜBERSCHNEIDUNGEN ---
@@ -196,7 +200,6 @@ public class IndependentSet {
 		}
 		 */
 
-		long currentTime = System.currentTimeMillis();
 		IProblem problem = solver;
 		int solvable = (problem.isSatisfiable()) ? 1 : 0;
 		long afterTime = System.currentTimeMillis();
@@ -204,7 +207,7 @@ public class IndependentSet {
 		int[] result = {solvable,(int)(afterTime-currentTime)};
 
 
-		/*//wenn Problem lösbar
+		//wenn Problem lösbar
 		if (solvable == 1) {
 			System.out.println("The problem is satisfiable.");
 			//Lösung übergeben
@@ -225,7 +228,7 @@ public class IndependentSet {
 
 		} else {
 			System.out.println("The problem is unsatisfiable.");
-		}*/
+		}
 		return result;
 	}
 
@@ -236,8 +239,10 @@ public class IndependentSet {
 	 * @param model Angabe des Modells, welches vorliegt (2-Position, 3-Position)
 	 * @return true wenn lösbar, sonst false
 	 */
-	public static int[] twoSATSolve(ArrayList<Rectangle> rectangles, LinkedList<Point> points, int model) {
+	public static int[] twoSATSolve(ArrayList<Rectangle> rectangles, List<int[]> intersectionClauses,
+									LinkedList<Point> points, int model) {
 
+		long currentTime = System.currentTimeMillis();
 		//Liste, welche alle zu berücksichtigenden Klauseln bekommt
 		List<Clause<Integer>> formula = new LinkedList<Clause<Integer>>();
 
@@ -273,7 +278,57 @@ public class IndependentSet {
 			}
 		}
 
-		//Rechtecke pro Punkt
+		for(int[] intersectionClause : intersectionClauses){
+			//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
+			Literal<Integer> lit1 = new Literal<>(-intersectionClause[0], false);
+			Literal<Integer> lit2 = new Literal<>(-intersectionClause[1], false);
+
+			//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
+			formula.add(new Clause<>(lit1, lit2));
+		}
+
+		/*//für jedes Rechteck (außer die des letzten Punktes)
+		long goThroughNeigh = 0;
+		long queryTree = 0;
+		long goThroughRects1 = System.currentTimeMillis();
+		for (int i = 1 ; i < rectangles.size() ; i++){
+			//Envelope besorgen (Rechteck an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
+			Rectangle r1 = rectangles.get(i - 1);
+			Envelope r1Env = r1.getEnvelope();
+
+			//intersecting Envelopes besorgen
+			long queryTree1 = System.nanoTime();
+			List<Rectangle> intersections = rectTree.query(r1Env);
+			long queryTree2 = System.nanoTime();
+			queryTree += (queryTree2-queryTree1);
+
+			for(Rectangle intersectRect : intersections){
+				int intersectID = intersectRect.getID();
+				//Wenn das überschneidende Rechteck zu den Nachbarn gehört beim nächsten Rechteck weitermachen
+
+				if(r1.getNeighbors().contains(intersectID) || i == intersectID){
+					break;
+				}
+				else {
+					long goThroughNeigh1 = System.nanoTime();
+					//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
+					Literal<Integer> lit1 = new Literal<>(i, true);
+					Literal<Integer> lit2 = new Literal<>(intersectID, true);
+
+					//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
+					formula.add(new Clause<>(lit1.negation(), lit2.negation()));
+					long goThroughNeigh2 = System.nanoTime();
+					goThroughNeigh += (goThroughNeigh2-goThroughNeigh1);
+				}
+			}
+			rectTree.remove(r1Env,r1);
+		}
+		long goThroughRects2 = System.currentTimeMillis();
+		System.out.println("Intersections rausfinden insgesamt: "+(goThroughRects2 -goThroughRects1));
+		System.out.println("In den Nachbarrechtecken schauen: "+(goThroughNeigh/1000000));
+		System.out.println("Query an den Tree: "+(queryTree/1000000));*/
+
+		/*//Rechtecke pro Punkt
 		int rectPerPoint = model;
 		if (model == 3) rectPerPoint = 4;
 		//für jedes Rechteck (außer die des letzten Punktes)
@@ -296,8 +351,8 @@ public class IndependentSet {
 					formula.add(new Clause<>(i_lit.negation(), j_lit.negation()));
 				}
 			}
-		}
-		long currentTime = System.currentTimeMillis();
+		}*/
+
 		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
 		long afterTime = System.currentTimeMillis();
 		System.out.println("twoSatSolve needs: " + (afterTime-currentTime) + " milliseconds!");
@@ -329,7 +384,7 @@ public class IndependentSet {
 					rectangles.get(rect_id).setSelected(false);
 				}
 
-				System.out.println(entry.getKey() + " " + entry.getValue());
+				//System.out.println(entry.getKey() + " " + entry.getValue());
 			}
 
 		}
@@ -361,7 +416,7 @@ public class IndependentSet {
 			//Kopfzeile schreiben
 			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
 
-			for(int i = minPoints ; i <= maxPoints ; i = i+10){
+			for(int i = minPoints ; i <= maxPoints ; i = i+500){
 				for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 50){
 					++id;
 					LinkedList<Point> points = Point.randomPoints(i,y,y);
@@ -380,27 +435,31 @@ public class IndependentSet {
 							break;
 					}
 
+					//STRtree erstellen, über den überlappende Rechtecke bestimmt werden können
 					STRtree rectanglesTree = new STRtree(rectangles.size());
-
 					for(Rectangle r : rectangles){
 						rectanglesTree.insert(r.getEnvelope(),r);
 					}
 
+					//Klauseln für überlappende Rechtecke erstellen
+					List<int[]> intersectionClauses = Rectangle.getIntersectionClauses(rectangles,rectanglesTree);
+
+
 					String distributionPath = newDirStr + model+"PM_"+i+"_"+y+".svg";
 					//write all points and rectangles to file
-					//writeToSVG(rectangles, points, distributionPath, true);
+					writeToSVG(rectangles, points, distributionPath, true);
 
 					//solve SAT instance and write solution to file, if it exists
 					int[] sat4jResult = new int[2];
 					try{
-						sat4jResult = solve(rectangles, points, 3);
+						sat4jResult = solve(rectangles, intersectionClauses, points, 3);
 					}catch(Exception e){
 						System.out.println(e);
 					}
 					boolean satisfiable = (sat4jResult[0]==1);
 					if (satisfiable) {
 						String sat4jPath = newDirStr + model+"PM_"+i+"_"+y+"sat4j.svg";
-						//writeToSVG(rectangles, points, sat4jPath, false);
+						writeToSVG(rectangles, points, sat4jPath, false);
 					}
 
 					writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + sat4jResult[1] + "\n");
@@ -409,11 +468,11 @@ public class IndependentSet {
 
 					//solve SAT instance and write solution to file, if it exists
 					//boolean satisfiable = solve(rectangles, points, 3);
-					int[] twoSatResult = twoSATSolve(rectangles, points, 3);
+					int[] twoSatResult = twoSATSolve(rectangles, intersectionClauses, points, 3);
 					satisfiable = (twoSatResult[0]==1);
 					if(satisfiable){
 						String twoSatPath = newDirStr + model+"PM_"+i+"_"+y+"2sat.svg";
-						//writeToSVG(rectangles, points, twoSatPath, false);
+						writeToSVG(rectangles, points, twoSatPath, false);
 					}
 
 					writer.write(id+","+ "2Sat" + "," + i + "," + y + "," + satisfiable + "," + twoSatResult[1] + "\n");

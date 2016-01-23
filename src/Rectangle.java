@@ -1,5 +1,6 @@
 
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.index.strtree.STRtree;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,6 +17,8 @@ public class Rectangle {
 	private int r1;
 	private int r2;
 	private int id; //IDs are automatically generated with an incrementing counter
+	private Envelope env;	//vividsolutions Envelope for using STRtree (easier testing of intersections)
+	private LinkedList<Integer> neighbors;
 	private boolean isSelected;
 	
 	public Rectangle(int c1, int r1, int c2, int r2) {
@@ -23,6 +26,7 @@ public class Rectangle {
 		this.c2 = c2;
 		this.r1 = r1;
 		this.r2 = r2;
+		this.env = getEnvelope(); //Envelope is being created while instantiating the Rectangle object
 		id = ++maxVar;
 	}
 	
@@ -52,6 +56,58 @@ public class Rectangle {
 	
 	public int getID() {
 		return id;
+	}
+
+	public LinkedList<Integer> getNeighbors() {return neighbors; }
+
+	public static List<int[]> getIntersectionClauses(List<Rectangle> rectangles, STRtree rectTree){
+		//Liste mit den Klauseln für die Rückgabe
+		List<int[]> intersectionClauses = new LinkedList<>() ;
+
+		for(Rectangle rectangle : rectangles){
+			Envelope rectEnv = rectangle.env;
+			List<Rectangle> intersections = rectTree.query(rectEnv);
+
+			for(Rectangle intersectRect : intersections){
+				int intersectID = intersectRect.getID();
+
+				//Wenn das überschneidende Rechteck zu den Nachbarn gehört beim nächsten Rechteck weitermachen
+				if(rectangle.getNeighbors().contains(intersectID) || rectangle.getID() == intersectID){
+					continue;
+				}
+				else {
+					//Arrays mit den IDs der sich überschneidenden Rechtecke erstellen
+					int[] intersectionClause = {-rectangle.getID(),-intersectID};
+
+					//in die Liste für die Ausgabe tun
+					intersectionClauses.add(intersectionClause);
+				}
+			}
+			rectTree.remove(rectEnv,rectangle);
+		}
+		/*//Rechtecke pro Punkt
+		int rectPerPoint = 4;
+		//für jedes Rechteck (außer die des letzten Punktes)
+		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
+			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
+			Rectangle r1 = rectangles.get(i-1);
+			//ID des nächsten Rechtecks zum Vergleichen bestimmen
+			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
+			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
+			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
+			for (int j = nextPos ; j < rectangles.size() ; j++){
+				Rectangle r2 = rectangles.get(j-1);
+				//prüfen ob sich die Rechtecke überschneiden
+				if (r1.intersects(r2)) {
+					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
+					int[] intersectClause = {-i, -j};
+					//Klausel dem Solver übergeben
+					intersectionClauses.add(intersectClause);
+				}
+			}
+		}*/
+
+		return intersectionClauses;
 	}
 	
 	public static LinkedList<Rectangle> readRectangles(String filename) throws NumberFormatException, IOException {
@@ -90,7 +146,7 @@ public class Rectangle {
 			
 			//upper right
 			Rectangle r4 = new Rectangle(p.getColumn(), p.getRow() - h, p.getColumn() + w, p.getRow());
-			
+
 			//add rectangles to set of possible labels for p
 			p.addRectangle(r1);
 			p.addRectangle(r2);
@@ -129,6 +185,21 @@ public class Rectangle {
 
 			//upper right right
 			Rectangle r4 = new Rectangle(p.getColumn() + (w/2), p.getRow() - h, p.getColumn() + w, p.getRow());
+
+			//set neighbor rectangles of new rectangles
+			r1.neighbors = new LinkedList<>();
+			r1.neighbors.add(r2.getID());
+
+			r2.neighbors = new LinkedList<>();
+			r2.neighbors.add(r1.getID());
+			r2.neighbors.add(r3.getID());
+
+			r3.neighbors = new LinkedList<>();
+			r3.neighbors.add(r2.getID());
+			r3.neighbors.add(r4.getID());
+
+			r4.neighbors = new LinkedList<>();
+			r4.neighbors.add(r3.getID());
 
 			//add rectangles to set of possible labels for p
 			p.addRectangle(r1);
@@ -184,8 +255,15 @@ public class Rectangle {
 		}
 	}
 
+	/**
+	 * If this.env is not set, a new Envelope is being created and returned, else this.env is returned
+	 * @return Envelope object, which contains coordinates of this rectangle
+	 */
 	public Envelope getEnvelope(){
-		return new Envelope(this.getX1(),this.getX2(),this.getY1(),this.getY2());
+		if(this.env == null){
+			return new Envelope((double)this.getX1(),(double)this.getX2(),(double)this.getY2(),(double)this.getY1());
+		}
+		else return this.env;
 	}
 	
 	
