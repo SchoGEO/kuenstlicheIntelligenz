@@ -131,8 +131,9 @@ public class Rectangle {
 		return "" + c1 + "," + r1 + "," + c2 + "," + r2;
 	}
 
-	public static ArrayList<Rectangle> fourPositionModel(LinkedList<Point> points, int w, int h) {
-		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
+	public static RectangleList<Rectangle> fourPositionModel(LinkedList<Point> points, int w, int h) {
+		RectangleList<Rectangle> rectangles = new RectangleList<>(4 * points.size());
+		rectangles.setModel("fourPositionModel");
 		for (Point p : points) {
 			
 			//lower left
@@ -169,9 +170,10 @@ public class Rectangle {
 	 * @param h
 	 * @return
 	 */
-	public static ArrayList<Rectangle> threePositionModel(LinkedList<Point> points, int w, int h) {
+	public static RectangleList<Rectangle> threePositionModel2CNF(LinkedList<Point> points, int w, int h) {
 		maxVar = 0;
-		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(4 * points.size());
+		RectangleList<Rectangle> rectangles = new RectangleList<Rectangle>(4 * points.size());
+		rectangles.setModel("threePositionModel2CNF");
 		for (Point p : points) {
 
 			//upper left left
@@ -216,8 +218,51 @@ public class Rectangle {
 		return rectangles;
 	}
 
-	public static ArrayList<Rectangle> twoPositionModel(LinkedList<Point> points, int w, int h) {
-		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>(2 * points.size());
+	public static RectangleList<Rectangle> threePositionModel(LinkedList<Point> points, int w, int h) {
+		maxVar = 0;
+		RectangleList<Rectangle> rectangles = new RectangleList<>(3 * points.size());
+		rectangles.setModel("threePositionModel");
+		for (Point p : points) {
+
+			//upper left
+			Rectangle r1 = new Rectangle(p.getColumn() - w, p.getRow() - h,p.getColumn(), p.getRow());
+
+			//upper middle
+			Rectangle r2 = new Rectangle(p.getColumn() - (w/2), p.getRow() - h,p.getColumn() + (w/2), p.getRow());
+
+			//upper right
+			Rectangle r3 = new Rectangle(p.getColumn(), p.getRow() - h, p.getColumn() + w, p.getRow());
+
+			//set neighbor rectangles of new rectangles
+			r1.neighbors = new LinkedList<>();
+			r1.neighbors.add(r2.getID());
+			r1.neighbors.add(r3.getID());
+
+			r2.neighbors = new LinkedList<>();
+			r2.neighbors.add(r1.getID());
+			r2.neighbors.add(r3.getID());
+
+			r3.neighbors = new LinkedList<>();
+			r3.neighbors.add(r1.getID());
+			r3.neighbors.add(r2.getID());
+
+
+			//add rectangles to set of possible labels for p
+			p.addRectangle(r1);
+			p.addRectangle(r2);
+			p.addRectangle(r3);
+
+			//add rectangles to set of all labels
+			rectangles.add(r1);
+			rectangles.add(r2);
+			rectangles.add(r3);
+		}
+		return rectangles;
+	}
+
+	public static RectangleList<Rectangle> twoPositionModel(LinkedList<Point> points, int w, int h) {
+		RectangleList<Rectangle> rectangles = new RectangleList<>(2 * points.size());
+		rectangles.setModel("twoPositionModel");
 		for (Point p : points) {
 
 			//upper left

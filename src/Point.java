@@ -46,6 +46,14 @@ public class Point {
 		return points;
 	}
 
+	public static LinkedList<Point> getPointsCopy(LinkedList<Point> points){
+		LinkedList<Point> pointsCopy = new LinkedList<>();
+		for(Point p : points){
+			pointsCopy.add(new Point(p.c,p.r));
+		}
+		return pointsCopy;
+	}
+
 	public static LinkedList<Point> readPoints(String filename) throws NumberFormatException, IOException {
 		LinkedList<Point> points = new LinkedList<Point>();
 		BufferedReader br = new BufferedReader(new FileReader(filename));
