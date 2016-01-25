@@ -26,6 +26,9 @@ public class IndependentSet {
 		int rectangleHeight = 10;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
+		/**
+		 * Sehr dichte, aber lösbare Punktwolke generieren
+		 */
 		//iterateSolvablePointCloud(2000,200,1200,rectangleWidth,rectangleHeight);
 
 		/**
@@ -36,9 +39,9 @@ public class IndependentSet {
 
 		writeToSVG(pointRects, readPoints, "iterPoints_Test3.svg", true);*/
 		/**
-		 * Punkte einlesen, lösen und zeichnen
+		 * Punkte einlesen, mit 3CNF lösen und zeichnen
 		 */
-		LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel(readPoints,rectangleWidth,rectangleHeight);
 
 		STRtree rectanglesTree = new STRtree(pointRects.size());
@@ -55,6 +58,28 @@ public class IndependentSet {
 		boolean satisfiable = (result[0]==1);
 		if(satisfiable){
 			writeToSVG(pointRects, readPoints, "iterPoints_Test3_solve.svg", false);
+		}*/
+
+		/**
+		 * Punkte einlesen, mit 2CNF lösen und zeichnen
+		 */
+		LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
+		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel2CNF(readPoints,rectangleWidth,rectangleHeight);
+
+		STRtree rectanglesTree = new STRtree(pointRects.size());
+		for(Rectangle r : pointRects){
+			rectanglesTree.insert(r.getEnvelope(),r);
+		}
+		List<int[]> intersectionClauses = Rectangle.getIntersectionClauses(pointRects,rectanglesTree);
+		int[] result = new int[2];
+		try{
+			result = twoSATSolve(pointRects,intersectionClauses,readPoints);
+		}catch(Exception e){
+			System.out.println(e);
+		}
+		boolean satisfiable = (result[0]==1);
+		if(satisfiable){
+			writeToSVG(pointRects, readPoints, "iterPoints_Test3_2SATsolve.svg", false);
 		}
 
 		/**
