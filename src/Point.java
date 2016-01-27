@@ -35,6 +35,10 @@ public class Point {
 		return r;
 	}
 
+	public boolean equals(Point other){
+		return (this.r == other.r && this.c == other.c);
+	}
+
 	public static LinkedList<Point> randomPoints(int anzahl, int breite, int hoehe){
 		LinkedList<Point> points = new LinkedList<Point>();
 		Random random = new Random();
@@ -67,5 +71,11 @@ public class Point {
 		br.close();
 		
 		return points;
+	}
+
+	public static void removeReferences(LinkedList<Point> points){
+		for(Point p : points){
+			p.rectangles = new LinkedList<>();
+		}
 	}
 }

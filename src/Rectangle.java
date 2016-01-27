@@ -38,6 +38,10 @@ public class Rectangle {
 		return true;
 	}
 	
+	public boolean equals(Rectangle other){
+		return this.id == other.id;
+	}
+
 	public int getX1() {
 		return c1;
 	} 
@@ -60,7 +64,7 @@ public class Rectangle {
 
 	public LinkedList<Integer> getNeighbors() {return neighbors; }
 
-	public static List<int[]> getIntersectionClauses(List<Rectangle> rectangles, STRtree rectTree){
+	public static List<int[]> getIntersectionClauses(RectangleList<Rectangle> rectangles, STRtree rectTree){
 		//Liste mit den Klauseln für die Rückgabe
 		List<int[]> intersectionClauses = new LinkedList<>() ;
 
@@ -87,6 +91,7 @@ public class Rectangle {
 		}
 		/*//Rechtecke pro Punkt
 		int rectPerPoint = 4;
+		if(rectangles.getModel() == "threePositionModel"){ rectPerPoint = 3;}
 		//für jedes Rechteck (außer die des letzten Punktes)
 		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
 			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
@@ -309,6 +314,14 @@ public class Rectangle {
 			return new Envelope((double)this.getX1(),(double)this.getX2(),(double)this.getY2(),(double)this.getY1());
 		}
 		else return this.env;
+	}
+
+	public static void removeReferences(RectangleList<Rectangle> rectangles){
+		for (Rectangle r : rectangles){
+			r.env.setToNull();
+			r.neighbors = null;
+			//rectangles.remove(r);
+		}
 	}
 	
 	

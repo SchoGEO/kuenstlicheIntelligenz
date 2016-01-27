@@ -22,22 +22,31 @@ import TwoSatTest.Literal;
 public class IndependentSet {
 	public static void main (String[] args) throws NumberFormatException, IOException, ContradictionException, TimeoutException {
 		
-		int rectangleWidth = 30;
-		int rectangleHeight = 10;
+		int rectangleWidth = 60;
+		int rectangleHeight = 20;
 		double scale = 1.0; //change scale to enlarge or shrink rectangles
 
 		/**
 		 * Sehr dichte, aber lösbare Punktwolke generieren
 		 */
-		//iterateSolvablePointCloud(2000,200,1200,rectangleWidth,rectangleHeight);
+		//iterateSolvablePointCloud(500,2000,10000,rectangleWidth,rectangleHeight);
+
+		//Pfad für eine bestehende Punktdatei, die erweitert werden soll
+		//String startPath = "C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5000+500_10000_60x20.txt";
+		//iterateSolvablePointCloud(525,startPath,10000,rectangleWidth,rectangleHeight);
+		/**
+		 * Laufzeit einer einzelnen Probleminstanz mehrmals testen und Vergleichsergebnisse in File schreiben
+		 */
+		//compareSingleFileRuntime(23,"C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt",
+		//		rectangleWidth,rectangleHeight);
 
 		/**
 		 * Punkte einlesen und zeichnen
 		 */
-		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
+		LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel(readPoints,rectangleWidth,rectangleHeight);
 
-		writeToSVG(pointRects, readPoints, "iterPoints_Test3.svg", true);*/
+		writeToSVG(pointRects, readPoints, "iterPoints5500+500_10000_60x20.svg", true);
 		/**
 		 * Punkte einlesen, mit 3CNF lösen und zeichnen
 		 */
@@ -63,7 +72,7 @@ public class IndependentSet {
 		/**
 		 * Punkte einlesen, mit 2CNF lösen und zeichnen
 		 */
-		LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel2CNF(readPoints,rectangleWidth,rectangleHeight);
 
 		STRtree rectanglesTree = new STRtree(pointRects.size());
@@ -79,13 +88,13 @@ public class IndependentSet {
 		}
 		boolean satisfiable = (result[0]==1);
 		if(satisfiable){
-			writeToSVG(pointRects, readPoints, "iterPoints_Test3_2SATsolve.svg", false);
-		}
+			writeToSVG(pointRects, readPoints, "iterPoints5500+500_10000_60x20.svg", false);
+		}*/
 
 		/**
 		 * Laufzeiten vergleichen
 		 */
-		//compareRuntimes(4000,4000,6000,6000,"threePositionModel",rectangleWidth,rectangleHeight);
+		//compareRuntimes(5000,5000,10000,10000,"threePositionModel",rectangleWidth,rectangleHeight);
 
 		/*//read points from text file
 		//LinkedList<Point> points = Point.readPoints("points_ext.csv");
@@ -233,52 +242,6 @@ public class IndependentSet {
 		for(int[] intersectionClause : intersectionClauses){
 			solver.addClause(new VecInt(intersectionClause));
 		}
-		/*//Rechtecke pro Punkt
-		int rectPerPoint = model;
-		if (model == 3) rectPerPoint = 4;
-		//für jedes Rechteck (außer die des letzten Punktes)
-		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
-			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
-			Rectangle r1 = rectangles.get(i-1);
-			//ID des nächsten Rechtecks zum Vergleichen bestimmen
-			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
-			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
-			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
-			for (int j = nextPos ; j < rectangles.size() ; j++){
-				Rectangle r2 = rectangles.get(j-1);
-				//prüfen ob sich die Rechtecke überschneiden
-				if (r1.intersects(r2)) {
-					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
-					int[] intersectClause = {-i, -j};
-					//Klausel dem Solver übergeben
-					solver.addClause(new VecInt(intersectClause));
-				}
-			}
-		}*/
-
-		/**
-		 * --- ALTE METHODE ZUM VERGLEICH DER RECHTECK-ÜBERSCHNEIDUNGEN ---
-		//for every available rectangle
-		for (Rectangle r1 : rectangles) {
-			//and every other available rectangle
-			for (Rectangle r2 : rectangles) {
-				//get IDs of rectangles
-				int r1_id = r1.getID();
-				int r2_id = r2.getID();
-
-				//check if rectangles are the same
-				if (r1_id == r2_id) continue;
-
-				//check if the rectangles intersect
-				if (r1.intersects(r2)) {
-					//build clause of intersecting rectangles "minus" for "not r1_id or not r2_id"
-					int[] intersectClause = {-r1_id, -r2_id};
-					//add clause to solver
-					solver.addClause(new VecInt(intersectClause));
-				}
-			}
-		}
-		 */
 
 		IProblem problem = solver;
 		int solvable = (problem.isSatisfiable()) ? 1 : 0;
@@ -304,7 +267,6 @@ public class IndependentSet {
 					rectangles.get(i).setSelected(selected);
 				}
 			}
-
 		} else {
 			System.out.println("The problem is unsatisfiable.");
 		}
@@ -371,72 +333,6 @@ public class IndependentSet {
 		long afterIntersectTime = System.currentTimeMillis();
 		long buildIntersectClauses = afterIntersectTime-intersectTime;
 
-		/*//für jedes Rechteck (außer die des letzten Punktes)
-		long goThroughNeigh = 0;
-		long queryTree = 0;
-		long goThroughRects1 = System.currentTimeMillis();
-		for (int i = 1 ; i < rectangles.size() ; i++){
-			//Envelope besorgen (Rechteck an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
-			Rectangle r1 = rectangles.get(i - 1);
-			Envelope r1Env = r1.getEnvelope();
-
-			//intersecting Envelopes besorgen
-			long queryTree1 = System.nanoTime();
-			List<Rectangle> intersections = rectTree.query(r1Env);
-			long queryTree2 = System.nanoTime();
-			queryTree += (queryTree2-queryTree1);
-
-			for(Rectangle intersectRect : intersections){
-				int intersectID = intersectRect.getID();
-				//Wenn das überschneidende Rechteck zu den Nachbarn gehört beim nächsten Rechteck weitermachen
-
-				if(r1.getNeighbors().contains(intersectID) || i == intersectID){
-					break;
-				}
-				else {
-					long goThroughNeigh1 = System.nanoTime();
-					//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
-					Literal<Integer> lit1 = new Literal<>(i, true);
-					Literal<Integer> lit2 = new Literal<>(intersectID, true);
-
-					//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
-					formula.add(new Clause<>(lit1.negation(), lit2.negation()));
-					long goThroughNeigh2 = System.nanoTime();
-					goThroughNeigh += (goThroughNeigh2-goThroughNeigh1);
-				}
-			}
-			rectTree.remove(r1Env,r1);
-		}
-		long goThroughRects2 = System.currentTimeMillis();
-		System.out.println("Intersections rausfinden insgesamt: "+(goThroughRects2 -goThroughRects1));
-		System.out.println("In den Nachbarrechtecken schauen: "+(goThroughNeigh/1000000));
-		System.out.println("Query an den Tree: "+(queryTree/1000000));*/
-
-		/*//Rechtecke pro Punkt
-		int rectPerPoint = model;
-		if (model == 3) rectPerPoint = 4;
-		//für jedes Rechteck (außer die des letzten Punktes)
-		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
-			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
-			Rectangle r1 = rectangles.get(i-1);
-			//ID des nächsten Rechtecks zum Vergleichen bestimmen
-			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
-			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
-			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
-			for (int j = nextPos ; j < rectangles.size() ; j++){
-				Rectangle r2 = rectangles.get(j-1);
-				//prüfen ob sich die Rechtecke überschneiden
-				if (r1.intersects(r2)) {
-					//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
-					Literal<Integer> i_lit = new Literal<>(i, true);
-					Literal<Integer> j_lit = new Literal<>(j, true);
-
-					//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
-					formula.add(new Clause<>(i_lit.negation(), j_lit.negation()));
-				}
-			}
-		}*/
-
 		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
 		long afterTime = System.currentTimeMillis();
 		System.out.println("twoSatSolve needs: " + (afterTime-currentTime-buildIntersectClauses) + " milliseconds!");
@@ -500,11 +396,11 @@ public class IndependentSet {
 		try(BufferedWriter writer = new BufferedWriter(new FileWriter(newFile)))
 		{
 			//Kopfzeile schreiben
-			writer.write("ID" + "," + "Solver" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "Runtime (ms)" + "\n");
+			writer.write("ID" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "sat4j(ms)," + "2SAT(ms)" + "\n");
 
 
-			for(int x = 1 ; x <= 1000 ; x++){
-				for(int i = minPoints ; i <= maxPoints ; i = i+500){
+			for(int x = 1 ; x <= 22 ; x++){
+				for(int i = minPoints ; i <= maxPoints ; i = i+minPoints){
 					for(int y = minFrameEdge ; y <= maxFrameEdge ; y = y + 500){
 						++id;
 						LinkedList<Point> points = Point.randomPoints(i,y,y);
@@ -588,7 +484,7 @@ public class IndependentSet {
 							writeToSVG(rectangles, points, sat4jPath, false);
 						}
 
-						writer.write(id+","+ "sat4j" + "," + i + "," + y + "," + satisfiable + "," + sat4jResult[1] + "\n");
+						writer.write(id + "," + i + "," + y + "," + satisfiable + "," + sat4jResult[1] + ",");
 
 						Rectangle.resetList(rectangles);
 
@@ -612,7 +508,7 @@ public class IndependentSet {
 							}
 						}
 
-						writer.write(id+","+ "2Sat" + "," + i + "," + y + "," + satisfiable + "," + twoSatResult[1] + "\n");
+						writer.write(twoSatResult[1] + "\n");
 					}
 				}
 			}
@@ -629,12 +525,88 @@ public class IndependentSet {
 		}
 	}
 
+	public static void compareSingleFileRuntime(int tests, String filepath, int rectWidth, int rectHeight){
+		LinkedList<Point> points = new LinkedList<>();
+		LinkedList<Point> points2CNF = new LinkedList<>();
+		try{
+			points = Point.readPoints(filepath);
+			points2CNF = Point.readPoints(filepath);
+		}catch(IOException io){
+			io.printStackTrace();
+		}
+		RectangleList<Rectangle> rectangles = Rectangle.threePositionModel(points,rectWidth,rectHeight);
+		RectangleList<Rectangle> rectangles2CNF = Rectangle.threePositionModel2CNF(points2CNF, rectWidth, rectHeight);
+
+		STRtree rectanglesTree = new STRtree(rectangles.size());
+		for(Rectangle r : rectangles){
+			rectanglesTree.insert(r.getEnvelope(),r);
+		}
+		List<int[]> intersectionClauses = Rectangle.getIntersectionClauses(rectangles,rectanglesTree);
+
+		STRtree rectanglesTree2CNF = new STRtree(rectangles2CNF.size());
+		for(Rectangle r : rectangles2CNF){
+			rectanglesTree2CNF.insert(r.getEnvelope(),r);
+		}
+		List<int[]> intersectionClauses2CNF = Rectangle.getIntersectionClauses(rectangles,rectanglesTree);
+
+		//entsprechend der Testzahl versuchen das Problem zu lösen und in File schreiben
+		String newDirStr = "./" + String.valueOf(System.currentTimeMillis()) + "/";
+		File newDir = new File(newDirStr);
+		try{
+			newDir.mkdir();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		String filename = newDirStr + System.currentTimeMillis() + "Laufzeitvergleich.txt";
+		File newFile = new File(filename);
+		int id = 0;
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(newFile)))
+		{
+			//Kopfzeile schreiben
+			writer.write("ID" + "," + "Points" + "," + "RasterSize" + "," + "solvable" + "," + "sat4j(ms)," + "2SAT(ms)" + "\n");
+
+			for(int x = 1 ; x <= tests ; x++){
+				++id;
+
+				//solve SAT instance and write solution to file, if it exists
+				int[] sat4jResult = new int[2];
+				try{
+					sat4jResult = solve(rectangles, intersectionClauses, points);
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+				boolean satisfiable = (sat4jResult[0]==1);
+
+				writer.write(id+","+ points.size() + "," + satisfiable + "," + sat4jResult[1] +",");
+
+				//solve SAT instance and write solution to file, if it exists
+				//boolean satisfiable = solve(rectangles, points, 3);
+				int[] twoSatResult;
+				twoSatResult = twoSATSolve(rectangles2CNF, intersectionClauses2CNF, points2CNF);
+				satisfiable = (twoSatResult[0]==1);
+
+				writer.write(twoSatResult[1] + "\n");
+			}
+		} catch(IOException io) {
+			io.printStackTrace();
+		}
+
+		try {
+			newFile.createNewFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
 	public static void iterateSolvablePointCloud(int iterations, int startPoints,int frameWidth, int rectWidth, int rectHeight){
 		LinkedList<Point> iterPoints = new LinkedList<>();
+		RectangleList<Rectangle> iterRectangles;
 		boolean satisfiable = false;
 		do{
 			iterPoints = Point.randomPoints(startPoints,frameWidth,frameWidth);
-			RectangleList<Rectangle> iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
+			iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
 			STRtree rectanglesTree = new STRtree(iterRectangles.size());
 			for(Rectangle r : iterRectangles){
 				rectanglesTree.insert(r.getEnvelope(),r);
@@ -647,12 +619,18 @@ public class IndependentSet {
 				System.out.println(e);
 			}
 			satisfiable = (result[0]==1);
+
+			//Referenzen zu Rechtecken entfernen
+			Point.removeReferences(iterPoints);
+
+			//Referenzen innerhalb von Rechtecken entfernen
+			Rectangle.removeReferences(iterRectangles);
 		}while(!satisfiable);
 
 		for(int i = 0 ; i <= iterations ; i++){
 			LinkedList<Point> addPoint = Point.randomPoints(1,frameWidth,frameWidth);
 			iterPoints.addLast(addPoint.getLast());
-			RectangleList<Rectangle> iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
+			iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
 			STRtree rectanglesTree = new STRtree(iterRectangles.size());
 			for(Rectangle r : iterRectangles){
 				rectanglesTree.insert(r.getEnvelope(),r);
@@ -671,6 +649,60 @@ public class IndependentSet {
 			else{
 				iterPoints.removeLast();
 			}
+			Point.removeReferences(iterPoints);
+			Rectangle.removeReferences(iterRectangles);
+		}
+		String filename = "./"+System.currentTimeMillis() + "_iterPoints.txt";
+		File newFile = new File(filename);
+
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(newFile))) {
+			for(Point p : iterPoints){
+				writer.write(p.getColumn()+","+p.getRow()+"\n");
+			}
+		}catch(IOException io){
+			System.out.println(io);
+		}
+		try {
+			newFile.createNewFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void iterateSolvablePointCloud(int iterations, String startPath,int frameWidth, int rectWidth, int rectHeight){
+		LinkedList<Point> iterPoints = new LinkedList<>();
+		try{
+			iterPoints = Point.readPoints(startPath);
+		}catch(IOException io){
+			io.printStackTrace();
+		}
+
+		RectangleList<Rectangle> iterRectangles;
+
+		for(int i = 0 ; i <= iterations ; i++){
+			LinkedList<Point> addPoint = Point.randomPoints(1,frameWidth,frameWidth);
+			iterPoints.addLast(addPoint.getLast());
+			iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
+			STRtree rectanglesTree = new STRtree(iterRectangles.size());
+			for(Rectangle r : iterRectangles){
+				rectanglesTree.insert(r.getEnvelope(),r);
+			}
+			List<int[]> intersectionClauses = Rectangle.getIntersectionClauses(iterRectangles,rectanglesTree);
+			int[] result = new int[2];
+			try{
+				result = solve(iterRectangles,intersectionClauses,iterPoints);
+			}catch(Exception e){
+				System.out.println(e);
+			}
+			boolean satisfiable = (result[0]==1);
+			if(satisfiable){
+				System.out.println("New Point added to iterPoints!");
+			}
+			else{
+				iterPoints.removeLast();
+			}
+			Point.removeReferences(iterPoints);
+			Rectangle.removeReferences(iterRectangles);
 		}
 		String filename = "./"+System.currentTimeMillis() + "_iterPoints.txt";
 		File newFile = new File(filename);
