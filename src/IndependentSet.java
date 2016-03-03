@@ -32,25 +32,25 @@ public class IndependentSet {
 		//iterateSolvablePointCloud(500,2000,10000,rectangleWidth,rectangleHeight);
 
 		//Pfad für eine bestehende Punktdatei, die erweitert werden soll
-		//String startPath = "C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5000+500_10000_60x20.txt";
-		//iterateSolvablePointCloud(525,startPath,10000,rectangleWidth,rectangleHeight);
+		/*String startPath = "C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints9500+500_10000_60x20.txt";
+		iterateSolvablePointCloud(580,startPath,10000,rectangleWidth,rectangleHeight);*/
 		/**
 		 * Laufzeit einer einzelnen Probleminstanz mehrmals testen und Vergleichsergebnisse in File schreiben
 		 */
-		//compareSingleFileRuntime(23,"C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt",
-		//		rectangleWidth,rectangleHeight);
+		compareSingleFileRuntime(26,"C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints10000+500_10000_60x20.txt",
+				rectangleWidth,rectangleHeight);
 
 		/**
 		 * Punkte einlesen und zeichnen
 		 */
-		LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints6500+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel(readPoints,rectangleWidth,rectangleHeight);
 
-		writeToSVG(pointRects, readPoints, "iterPoints5500+500_10000_60x20.svg", true);
+		writeToSVG(pointRects, readPoints, "iterPoints6500+500_10000_60x20.svg", true);*/
 		/**
 		 * Punkte einlesen, mit 3CNF lösen und zeichnen
 		 */
-		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\1453672036918_iterPoints.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints6500+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel(readPoints,rectangleWidth,rectangleHeight);
 
 		STRtree rectanglesTree = new STRtree(pointRects.size());
@@ -66,13 +66,13 @@ public class IndependentSet {
 		}
 		boolean satisfiable = (result[0]==1);
 		if(satisfiable){
-			writeToSVG(pointRects, readPoints, "iterPoints_Test3_solve.svg", false);
+			writeToSVG(pointRects, readPoints, "iterPoints6500+500_10000_60x20_3SAT.svg", false);
 		}*/
 
 		/**
 		 * Punkte einlesen, mit 2CNF lösen und zeichnen
 		 */
-		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints5500+500_10000_60x20.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints7000+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel2CNF(readPoints,rectangleWidth,rectangleHeight);
 
 		STRtree rectanglesTree = new STRtree(pointRects.size());
@@ -88,7 +88,7 @@ public class IndependentSet {
 		}
 		boolean satisfiable = (result[0]==1);
 		if(satisfiable){
-			writeToSVG(pointRects, readPoints, "iterPoints5500+500_10000_60x20.svg", false);
+			writeToSVG(pointRects, readPoints, "iterPoints7000+500_10000_60x20_2SAT.svg", false);
 		}*/
 
 		/**
@@ -680,9 +680,10 @@ public class IndependentSet {
 		RectangleList<Rectangle> iterRectangles;
 
 		for(int i = 0 ; i <= iterations ; i++){
+			System.out.println((i+1) + ".te Iteration:");
 			LinkedList<Point> addPoint = Point.randomPoints(1,frameWidth,frameWidth);
 			iterPoints.addLast(addPoint.getLast());
-			iterRectangles = Rectangle.threePositionModel(iterPoints,rectWidth,rectHeight);
+			iterRectangles = Rectangle.threePositionModel2CNF(iterPoints,rectWidth,rectHeight);
 			STRtree rectanglesTree = new STRtree(iterRectangles.size());
 			for(Rectangle r : iterRectangles){
 				rectanglesTree.insert(r.getEnvelope(),r);
@@ -690,7 +691,7 @@ public class IndependentSet {
 			List<int[]> intersectionClauses = Rectangle.getIntersectionClauses(iterRectangles,rectanglesTree);
 			int[] result = new int[2];
 			try{
-				result = solve(iterRectangles,intersectionClauses,iterPoints);
+				result = twoSATSolve(iterRectangles, intersectionClauses, iterPoints);
 			}catch(Exception e){
 				System.out.println(e);
 			}
