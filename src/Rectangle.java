@@ -64,6 +64,14 @@ public class Rectangle {
 
 	public LinkedList<Integer> getNeighbors() {return neighbors; }
 
+	/**
+	 * Erstellt für eine gegebene Menge von Rechtecken alle Klauseln für Überlappungen von Rechtecken.
+	 * Für benachbarte Rechtecke welche zum selben Punkt gehören werden keine Klauseln erstellt
+	 * @param rectangles Rechtecke für die die Klauseln erstellt werden
+	 * @param rectTree STRtree welcher die Envelopes der Rechtecke enthält. Wird benötigt um Anfragen von
+	 *                 Rechtecküberlappungen zu stellen.
+	 * @return Liste aus int-Arrays welche die einzelnen Klauseln darstellen
+	 */
 	public static List<int[]> getIntersectionClauses(RectangleList<Rectangle> rectangles, STRtree rectTree){
 		//Liste mit den Klauseln für die Rückgabe
 		List<int[]> intersectionClauses = new LinkedList<>() ;
@@ -89,29 +97,6 @@ public class Rectangle {
 			}
 			rectTree.remove(rectEnv,rectangle);
 		}
-		/*//Rechtecke pro Punkt
-		int rectPerPoint = 4;
-		if(rectangles.getModel() == "threePositionModel"){ rectPerPoint = 3;}
-		//für jedes Rechteck (außer die des letzten Punktes)
-		for (int i = 1 ; i < rectangles.size() - rectPerPoint ; i++){
-			//Rechteck besorgen (an der Stelle ID -1, weil Rechtecke in einer Liste mit Indizes vorliegen)
-			Rectangle r1 = rectangles.get(i-1);
-			//ID des nächsten Rechtecks zum Vergleichen bestimmen
-			int nextPos = (i / rectPerPoint) * rectPerPoint + 1;
-			if (i % rectPerPoint != 0) nextPos += rectPerPoint;
-			//ausgewähltes Rechteck r1 mit allen verbleibenden Rechtecken auf Überschneidung vergleichen
-			for (int j = nextPos ; j < rectangles.size() ; j++){
-				Rectangle r2 = rectangles.get(j-1);
-				//prüfen ob sich die Rechtecke überschneiden
-				if (r1.intersects(r2)) {
-					//Klausel für sich überschneidende Rechtecke mit den IDs bilden ("minus" für "not i or not j")
-					int[] intersectClause = {-i, -j};
-					//Klausel dem Solver übergeben
-					intersectionClauses.add(intersectClause);
-				}
-			}
-		}*/
-
 		return intersectionClauses;
 	}
 	
@@ -169,11 +154,11 @@ public class Rectangle {
 	}
 
 	/**
-	 * threePositionModel: drei mögliche Positionen durch vier nebeneinanderliegende Rechtecke
-	 * @param points
-	 * @param w
-	 * @param h
-	 * @return
+	 * threePositionModel2CNF: drei mögliche Positionen durch vier nebeneinanderliegende Rechtecke
+	 * @param points Punkte für die die Beschriftungsrechtecke erstellt werden sollen
+	 * @param w Breite der Rechtecke
+	 * @param h Höhe der Rechtecke
+	 * @return Liste mit den erstellten Rechtecken
 	 */
 	public static RectangleList<Rectangle> threePositionModel2CNF(LinkedList<Point> points, int w, int h) {
 		maxVar = 0;
@@ -306,8 +291,8 @@ public class Rectangle {
 	}
 
 	/**
-	 * If this.env is not set, a new Envelope is being created and returned, else this.env is returned
-	 * @return Envelope object, which contains coordinates of this rectangle
+	 * Erstellt Envelope wenn noch nicht vorhanden und gibt Envelope zurück
+	 * @return Envelope Objekt, welches Koordinaten des Rechtecks enthält
 	 */
 	public Envelope getEnvelope(){
 		if(this.env == null){
@@ -316,6 +301,12 @@ public class Rectangle {
 		else return this.env;
 	}
 
+	/**
+	 * Entfernt Referenzen zu Nachbarrechtecken und Envelope-Objekten.
+	 * Wird benötigt wenn sehr viele Probleminstanzen nacheinander geschaffen werden.
+	 * Werden die Referenzen nicht entfernt wird der Platz im Arbeitsspeicher trotz Garbage Collector nicht geräumt.
+	 * @param rectangles Liste mit Rechtecken, deren Referenzen entfernt werden sollen
+	 */
 	public static void removeReferences(RectangleList<Rectangle> rectangles){
 		for (Rectangle r : rectangles){
 			r.env.setToNull();

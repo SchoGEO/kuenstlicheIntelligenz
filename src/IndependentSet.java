@@ -37,8 +37,8 @@ public class IndependentSet {
 		/**
 		 * Laufzeit einer einzelnen Probleminstanz mehrmals testen und Vergleichsergebnisse in File schreiben
 		 */
-		compareSingleFileRuntime(26,"C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints10000+500_10000_60x20.txt",
-				rectangleWidth,rectangleHeight);
+		/*compareSingleFileRuntime(26,"C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints10000+500_10000_60x20.txt",
+				rectangleWidth,rectangleHeight);*/
 
 		/**
 		 * Punkte einlesen und zeichnen
@@ -72,7 +72,7 @@ public class IndependentSet {
 		/**
 		 * Punkte einlesen, mit 2CNF lösen und zeichnen
 		 */
-		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints7000+500_10000_60x20.txt");
+		/*LinkedList<Point> readPoints = Point.readPoints("C:\\Users\\Jannes\\IdeaProjects\\kuenstlicheIntelligenz\\Laufzeittest\\iterPoints9500+500_10000_60x20.txt");
 		RectangleList<Rectangle> pointRects = Rectangle.threePositionModel2CNF(readPoints,rectangleWidth,rectangleHeight);
 
 		STRtree rectanglesTree = new STRtree(pointRects.size());
@@ -88,7 +88,7 @@ public class IndependentSet {
 		}
 		boolean satisfiable = (result[0]==1);
 		if(satisfiable){
-			writeToSVG(pointRects, readPoints, "iterPoints7000+500_10000_60x20_2SAT.svg", false);
+			writeToSVG(pointRects, readPoints, "iterPoints9500+500_10000_60x20_2SAT.svg", false);
 		}*/
 
 		/**
@@ -138,6 +138,7 @@ public class IndependentSet {
 	/**
 	 * solve-Methode, welche die sat4j-Bibliothek zur Lösung des Labelproblems verwendet
 	 * @param rectangles Rechtecke, welche mögliche Labelpositionen darstellen
+	 * @param intersectionClauses Klauseln von sich überschneidenden Rechtecken
 	 * @param points Punkte, welche von den Rechtecken umgeben sind
 	 * @return true wenn lösbar, sonst false
 	 * @throws ContradictionException
@@ -145,28 +146,6 @@ public class IndependentSet {
 	 */
 	public static int[] solve(RectangleList<Rectangle> rectangles, List<int[]> intersectionClauses,
 							  LinkedList<Point> points) throws ContradictionException, TimeoutException {
-		/*
-		 * TODO: --> Erledigt
-		 * Set up SAT formula to model the following problem:
-		 * - For each point, one of its four rectangles has to be selected
-		 * - For each two intersecting rectangles, at most one rectangle can be selected
-		 * 
-		 * Solve the SAT formula with sat4j
-		 * 
-		 * If the instance is satisfiable, 
-		 * - use the method setSelected to indicate whether a rectangle is selected
-		 * - return true  
-		 */
-		/*
-		 * TODO:
-		 * - solve Methode anpassen, sodass auch twoPositionModel funktioniert --> erledigt
-		 * - solve Methode anpassen, sodass auch threePositionModel funktioniert --> erledigt
-		 * 		- Rectangle Klasse muss angepasst werden mit Methode threePositionModel --> erledigt
-		 * 		- komplizierter, weil jeder Punkt vier Rechtecke bekommt (a,b,c,d), aus denen sich drei Labelrechtecke
-		 *		zusammensetzten lassen --> erledigt
-		 * - Methode schreiben, mit der sich die Laufzeit automatisch testen lässt mit größer werdenden Instanzen
-		 * - 2-Sat-Solver umsetzen für 2-Position- und 3-Position-Modell
-		 */
 
 		long currentTime = System.currentTimeMillis();
 		//initialize solver
@@ -243,10 +222,12 @@ public class IndependentSet {
 			solver.addClause(new VecInt(intersectionClause));
 		}
 
+		//versuchen die übergebenen Formeln zu lösen
 		IProblem problem = solver;
 		int solvable = (problem.isSatisfiable()) ? 1 : 0;
 		long afterTime = System.currentTimeMillis();
 		System.out.println("sat4j needs: " + (afterTime-currentTime) + " milliseconds!");
+		//int[] result als Rückgabe-Parameter der Methode
 		int[] result = {solvable,(int)(afterTime-currentTime)};
 
 		//wenn Problem lösbar
@@ -276,6 +257,7 @@ public class IndependentSet {
 	/**
 	 * solve-Methode, welche den TwoSatTest-Solver von Keith Schwarz zur Lösung des Labelproblems verwendet
 	 * @param rectangles Rechtecke, welche mögliche Labelpositionen darstellen
+	 * @param intersectionClauses Klauseln von sich überschneidenden Rechtecken
 	 * @param points Punkte, welche von den Rechtecken umgeben sind
 	 * @return true wenn lösbar, sonst false
 	 */
@@ -321,7 +303,7 @@ public class IndependentSet {
 			}
 		}
 
-		long intersectTime = System.currentTimeMillis();
+		//Klauseln der sich überschneidenden Rechtecke durchgehen
 		for(int[] intersectionClause : intersectionClauses){
 			//Literale mit den IDs der sich überschneidenden Rechtecke erstellen
 			Literal<Integer> lit1 = new Literal<>(-intersectionClause[0], false);
@@ -330,13 +312,14 @@ public class IndependentSet {
 			//Klausel für sich überschneidende Rechtecke mit den Literalen bilden (jeweils negiert)
 			formula.add(new Clause<>(lit1, lit2));
 		}
-		long afterIntersectTime = System.currentTimeMillis();
-		long buildIntersectClauses = afterIntersectTime-intersectTime;
 
+		//versuchen die übergebenen Formeln zu lösen
 		Map<Literal<Integer>, Boolean> truthAssignment = TwoSat.isSatisfiable(formula);
 		long afterTime = System.currentTimeMillis();
-		System.out.println("twoSatSolve needs: " + (afterTime-currentTime-buildIntersectClauses) + " milliseconds!");
+		System.out.println("twoSatSolve needs: " + (afterTime-currentTime) + " milliseconds!");
+
 		int solvable = (truthAssignment != null) ? 1 : 0;
+		//int[] result als Rückgabe-Parameter der Methode
 		int[] result = {solvable,(int)(afterTime-currentTime)};
 
 		if (truthAssignment != null) {
@@ -363,7 +346,7 @@ public class IndependentSet {
 				if (!positive && entry.getValue()) {
 					rectangles.get(rect_id).setSelected(false);
 				}
-
+				//falls Variablenbelegungen in Terminal ausgegeben werden sollen
 				//System.out.println(entry.getKey() + " " + entry.getValue());
 			}
 
@@ -376,10 +359,12 @@ public class IndependentSet {
 
 
 	/**
-	 *
-	 * @param maxPoints --> maximale Größe der Instanz, für die die Laufzeiten verglichen werden sollen
-	 * @param model "threePositionModel" to compare sat4j(3CNF formula) with 2SAT (2CNF formula)
-	 *              "threePositionModel2CNF" to compare sat4j(2CNF formula) with 2SAT (2CNF formula)
+	 * @param minPoints minimale Größe der Instanz, für die die Laufzeiten verglichen werden sollen
+	 * @param maxPoints maximale Größe der Instanz, für die die Laufzeiten verglichen werden sollen
+	 * @param minFrameEdge minimale Kantenlänge der Zeichenfläche
+	 * @param maxFrameEdge maximale Kantenlänge der Zeichenfläche
+	 * @param model "threePositionModel" um sat4j(3CNF formula) mit 2SAT (2CNF formula) zu vergleichen
+	 *              "threePositionModel2CNF" um sat4j(2CNF formula) mit 2SAT (2CNF formula) zu vergleichen
 	 */
 	public static void compareRuntimes(int minPoints, int maxPoints, int minFrameEdge, int maxFrameEdge, String model, int rectWidth, int rectHeight){
 		String newDirStr = "./" + String.valueOf(System.currentTimeMillis()) + "/";
@@ -466,7 +451,7 @@ public class IndependentSet {
 							intersectionClauses2CNF = Rectangle.getIntersectionClauses(rectangles2CNF, rectanglesTree2CNF);
 						}
 
-						//solve SAT instance and write solution to file, if it exists
+						//versuchen mit sat4j zu lösen
 						int[] sat4jResult = new int[2];
 						try{
 							sat4jResult = solve(rectangles, intersectionClauses, points);
@@ -488,8 +473,7 @@ public class IndependentSet {
 
 						Rectangle.resetList(rectangles);
 
-						//solve SAT instance and write solution to file, if it exists
-						//boolean satisfiable = solve(rectangles, points, 3);
+						//versuchen mit 2SAT zu lösen
 						int[] twoSatResult;
 						if(rectangles2CNF.size() > 0){
 							twoSatResult = twoSATSolve(rectangles2CNF, intersectionClauses2CNF, points2CNF);
@@ -525,6 +509,15 @@ public class IndependentSet {
 		}
 	}
 
+	/**
+	 * Testet die Laufzeit einer gegebenen Probleminstanz (zu beschriftende Punktmenge) mit dem 3-Positions-Modell
+	 * Punkte müssen in einer Textdatei, Koordinaten mit Kommata getrennt,
+	 * Punkte mit Zeilenumbrüchen getrennt vorliegen
+	 * @param tests Anzahl der Wiederholungen für den Laufzeittest
+	 * @param filepath Pfad der Datei mit den zu beschriftenden Punkten
+	 * @param rectWidth Breite der Beschriftungsrechtecke
+	 * @param rectHeight Höhe der Beschriftungsrechtecke
+	 */
 	public static void compareSingleFileRuntime(int tests, String filepath, int rectWidth, int rectHeight){
 		LinkedList<Point> points = new LinkedList<>();
 		LinkedList<Point> points2CNF = new LinkedList<>();
@@ -569,7 +562,7 @@ public class IndependentSet {
 			for(int x = 1 ; x <= tests ; x++){
 				++id;
 
-				//solve SAT instance and write solution to file, if it exists
+				//versuchen zu lösen und Ergebnis in Datei schreiben
 				int[] sat4jResult = new int[2];
 				try{
 					sat4jResult = solve(rectangles, intersectionClauses, points);
@@ -580,8 +573,7 @@ public class IndependentSet {
 
 				writer.write(id+","+ points.size() + "," + satisfiable + "," + sat4jResult[1] +",");
 
-				//solve SAT instance and write solution to file, if it exists
-				//boolean satisfiable = solve(rectangles, points, 3);
+				//versuchen zu lösen und Ergebnis in Datei schreiben
 				int[] twoSatResult;
 				twoSatResult = twoSATSolve(rectangles2CNF, intersectionClauses2CNF, points2CNF);
 				satisfiable = (twoSatResult[0]==1);
@@ -600,6 +592,17 @@ public class IndependentSet {
 
 	}
 
+	/**
+	 * Versuche eine lösbare Probleminstanz einer bestimmten Größe zu generieren und darauf aufbauend nach und nach
+	 * abhängig von der Zahl der Iterationen Punkte hinzuzufügen, so dass die Instanz weiterhin lösbar bleibt.
+	 * Lösbare Probleminstanz wird anschließend in eine Textdatei geschrieben.
+	 * @param iterations Anzahl der Iterationen bei denen zusätzliche Punkte hinzugefügt werden
+	 * @param startPoints Es wird so lange versucht zufällig eine Instanz mit dieser Anzahl von Punkten zu schaffen,
+	 *                    bis die Instanz lösbar ist
+	 * @param frameWidth Breite der Zeichenfläche (auch gleichzeitig Höhe, immer quadratisch)
+	 * @param rectWidth Breite der Beschriftungsrechtecke
+	 * @param rectHeight Höhe der Beschriftungsrechtecke
+	 */
 	public static void iterateSolvablePointCloud(int iterations, int startPoints,int frameWidth, int rectWidth, int rectHeight){
 		LinkedList<Point> iterPoints = new LinkedList<>();
 		RectangleList<Rectangle> iterRectangles;
@@ -669,6 +672,16 @@ public class IndependentSet {
 		}
 	}
 
+	/**
+	 * Versuche aufbauend auf einer bestehenden lösbaren Probleminstanz abhängig von der Zahl der
+	 * Iterationen Punkte nach und nach hinzuzufügen, so dass die Instanz weiterhin lösbar bleibt.
+	 * Lösbare Probleminstanz wird anschließend in eine Textdatei geschrieben.
+	 * @param iterations Anzahl der Iterationen bei denen zusätzliche Punkte hinzugefügt werden
+	 * @param startPath Pfad der Textdatei mit den Punkten, welche die bestehende lösbare Probleminstanz darstellen
+	 * @param frameWidth Breite der Zeichenfläche (auch gleichzeitig Höhe, immer quadratisch)
+	 * @param rectWidth Breite der Beschriftungsrechtecke
+	 * @param rectHeight Höhe der Beschriftungsrechtecke
+	 */
 	public static void iterateSolvablePointCloud(int iterations, String startPath,int frameWidth, int rectWidth, int rectHeight){
 		LinkedList<Point> iterPoints = new LinkedList<>();
 		try{

@@ -39,6 +39,13 @@ public class Point {
 		return (this.r == other.r && this.c == other.c);
 	}
 
+	/**
+	 * Zufällige Punktmenge generieren
+	 * @param anzahl Anzahl der zu generierenden Punkte
+	 * @param breite Breite der Zeichenfläche
+	 * @param hoehe Höhe der Zeichenfläche
+	 * @return Liste der Punktmenge
+	 */
 	public static LinkedList<Point> randomPoints(int anzahl, int breite, int hoehe){
 		LinkedList<Point> points = new LinkedList<Point>();
 		Random random = new Random();
@@ -50,6 +57,11 @@ public class Point {
 		return points;
 	}
 
+	/**
+	 * Kopie einer Liste mit Punkten erstellen
+	 * @param points Liste mit Punkten die kopiert werden soll
+	 * @return kopierte Liste
+	 */
 	public static LinkedList<Point> getPointsCopy(LinkedList<Point> points){
 		LinkedList<Point> pointsCopy = new LinkedList<>();
 		for(Point p : points){
@@ -73,6 +85,11 @@ public class Point {
 		return points;
 	}
 
+	/**
+	 * Entfernt Referenzen zu Rechtecken. Wird benötigt wenn sehr viele Probleminstanzen nacheinander geschaffen werden.
+	 * Werden die Referenzen nicht entfernt wird der Platz im Arbeitsspeicher trotz Garbage Collector nicht geräumt.
+	 * @param points Liste mit Punkten, deren Referenzen zu Rechtecken entfernt werden sollen
+	 */
 	public static void removeReferences(LinkedList<Point> points){
 		for(Point p : points){
 			p.rectangles = new LinkedList<>();
